@@ -3,81 +3,96 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Peace Page — Chat (Realtime DB)</title>
+  <title>Peace Page — Shared Live Messages (Firebase Realtime DB)</title>
   <style>
-    :root{--bg:#0b1020;--card:rgba(255,255,255,0.06);--accent:#ff758f;--muted:rgba(255,255,255,0.75);--bubble-me:#ff758f;--bubble-them:#2b2f45}
+    :root{--bg:#0b1020;--card:rgba(255,255,255,0.06);--accent:#ff758f;--muted:rgba(255,255,255,0.75)}
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-    body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), transparent 10%), radial-gradient(ellipse at 90% 90%, rgba(86,163,255,0.05), transparent 20%), var(--bg);color:var(--muted);overflow:hidden}
-    .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5rem;box-sizing:border-box}
-    .card{width:min(980px,96%);height:min(780px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));backdrop-filter: blur(8px);border-radius:18px;padding:0;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(2,6,23,0.6);overflow:hidden;position:relative}
-    .header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.03)}
-    .title{font-weight:700;color:white;font-size:18px}
-    .controls{display:flex;gap:8px;align-items:center}
-    .chat{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-    .messages{display:flex;flex-direction:column;gap:8px}
-    .msg-row{max-width:78%;display:flex;flex-direction:column}
-    .me{align-self:flex-end}
-    .them{align-self:flex-start}
-    .bubble{padding:10px 14px;border-radius:14px;color:white;font-weight:600;line-height:1.15;box-shadow:0 6px 18px rgba(2,6,23,0.45);word-break:break-word}
-    .bubble.me{background:linear-gradient(90deg,var(--bubble-me),#ff9f77);border-bottom-right-radius:4px}
-    .bubble.them{background:rgba(255,255,255,0.03);color:var(--muted);border-bottom-left-radius:4px}
-    .meta{font-size:11px;opacity:0.85;margin-top:6px;color:rgba(255,255,255,0.8)}
-    .composer{display:flex;gap:10px;padding:12px;border-top:1px solid rgba(255,255,255,0.03);align-items:end;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.02))}
-    .composer textarea{flex:1;min-height:56px;max-height:140px;background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;color:var(--muted);resize:none}
-    .btn{background:linear-gradient(90deg,var(--accent),#ff9f77);border:none;padding:10px 14px;border-radius:10px;color:#0b1020;font-weight:700;cursor:pointer}
-    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
-    .small{font-size:12px;opacity:0.8}
-    #pp-status{position:fixed;left:14px;bottom:14px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.45);color:#fff;font-size:12px;z-index:50}
+    body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), transparent 10%), radial-gradient(ellipse at 90% 90%, rgba(86,163,255,0.05), transparent 20%), var(--bg);overflow:hidden;color:var(--muted)}
+    .float-wrap{position:fixed;inset:0;pointer-events:none}
+    .float{position:absolute;border-radius:50%;opacity:0.18;filter:blur(6px);mix-blend-mode:screen;animation: drift 18s linear infinite}
+    .float.h1{width:420px;height:420px;background:linear-gradient(135deg,#ff9fb3,#ff758f);left:-60px;top:10%}
+    .float.h2{width:300px;height:300px;background:linear-gradient(135deg,#6fb8ff,#86d0ff);right:-80px;bottom:5%;animation-duration:26s}
+    .float.s1{width:120px;height:120px;background:linear-gradient(135deg,#ffd27a,#ff9f5a);left:20%;top:60%;opacity:0.12}
+    .float.s2{width:80px;height:80px;background:linear-gradient(135deg,#9bffdd,#5ad8c9);right:22%;top:15%;opacity:0.12;animation-duration:14s}
+    @keyframes drift{0%{transform:translateY(0) translateX(0) rotate(0)}50%{transform:translateY(-30vh) translateX(6vw) rotate(180deg)}100%{transform:translateY(0) translateX(0) rotate(360deg)}}
+    .hearts{position:fixed;inset:0;pointer-events:none}
+    .heart, .num{position:absolute;font-size:20px;opacity:0.85;transform:translateY(40vh);animation:rise 6s linear infinite}
+    .heart:nth-child(1){left:10%;animation-delay:0s}
+    .heart:nth-child(2){left:25%;animation-delay:1.2s}
+    .heart:nth-child(3){left:42%;animation-delay:0.6s}
+    .heart:nth-child(4){left:65%;animation-delay:1.9s}
+    .heart:nth-child(5){left:82%;animation-delay:0.3s}
+    .num{font-weight:800;font-size:34px;opacity:0.95;letter-spacing:1px}
+    .num.n1{left:18%;animation-delay:0.4s}
+    .num.n2{left:48%;animation-delay:1.0s}
+    .num.n3{left:78%;animation-delay:1.6s}
+    @keyframes rise{0%{transform:translateY(70vh) scale(.6);opacity:0}30%{opacity:.95}100%{transform:translateY(-20vh) scale(1.05);opacity:0}}
+    .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:3rem}
+    .card{width:min(1000px,95%);height:min(600px,86%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));backdrop-filter: blur(8px);border-radius:18px;padding:2rem;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(2,6,23,0.6);overflow:hidden}
+    .display{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+    .message{font-size:5.2vmin;line-height:1.05;text-align:center;font-weight:600;color:white;padding:1rem;max-width:90%;transition:transform .7s cubic-bezier(.22,.9,.3,1),opacity .6s;}
+    .composer{position:fixed;right:28px;bottom:28px;background:var(--card);border-radius:14px;padding:12px;backdrop-filter: blur(6px);display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 30px rgba(2,6,23,0.5)}
+    .composer textarea{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;color:var(--muted);min-width:260px;min-height:80px;resize:vertical}
+    .btn{background:linear-gradient(90deg,var(--accent),#ff9f77);border:none;padding:10px 16px;border-radius:12px;color:#0b1020;font-weight:700;cursor:pointer}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.08);color:var(--muted)}
     .overlay{position:fixed;inset:0;background:linear-gradient(rgba(3,6,15,0.55),rgba(3,6,15,0.7));display:flex;align-items:center;justify-content:center;z-index:60}
-    .modal{width:min(520px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.65);text-align:center;color:var(--muted)}
-    @media (max-width:720px){ .card{height:95vh;width:98vw;border-radius:12px} .header{padding:10px} .chat{padding:12px} .composer{padding:10px} }
+    .modal{width:min(420px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.65);text-align:center;color:var(--muted)}
+    .small{font-size:12px;opacity:0.8}
+    #pp-status{position:fixed;left:12px;bottom:12px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.45);color:#fff;font-size:12px;z-index:90}
+    @media (max-width:900px){ .float.h1, .float.h2{display:none} .card{height:80vh;padding:1.25rem} .composer{right:16px;left:16px;bottom:16px} .composer textarea{min-width:unset;width:100%} }
+    @media (max-width:480px){ .message{font-size:8.5vmin} .num{font-size:28px} .heart{font-size:18px} .card{border-radius:12px;padding:12px;height:78vh} .composer{padding:10px;border-radius:12px} .modal{padding:14px} }
   </style>
 </head>
 <body>
+  <div class="float-wrap" aria-hidden>
+    <div class="float h1"></div><div class="float h2"></div><div class="float s1"></div><div class="float s2"></div>
+  </div>
+
+  <div class="hearts" aria-hidden>
+    <div class="heart">❤️</div><div class="heart">💕</div><div class="heart">💫</div><div class="heart">💖</div><div class="heart">✨</div>
+    <div class="num n1">110</div><div class="num n2">110</div><div class="num n3">110</div>
+  </div>
+
   <div class="stage">
-    <div class="card" role="main" aria-live="polite">
-      <div class="header">
-        <div class="title">Peace Page — Chat</div>
-        <div class="controls">
-          <button id="forgetBtn" title="Forget pairing / re-pair" class="ghost">Settings</button>
-          <button id="clearBtnTop" class="ghost">Clear Chat</button>
-          <button id="fullscreenBtn" class="btn">Full Screen</button>
-        </div>
+    <div class="card" role="main">
+      <div class="display">
+        <div id="msg" class="message" aria-live="polite">No messages yet — send one below.</div>
       </div>
-
-      <div class="chat" id="chat">
-        <div class="messages" id="messages" aria-live="polite"></div>
-      </div>
-
-      <div class="composer">
-        <textarea id="text" placeholder="Type a message — Ctrl/Cmd+Enter to send"></textarea>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <button id="sendBtn" class="btn">Send</button>
-        </div>
+      <div class="footer" style="display:flex;justify-content:space-between;align-items:center;padding-top:8px">
+        <div class="small">Peace Page — shared live messages (Realtime DB)</div>
+        <div><button id="fullscreenBtn" class="btn">Full Screen</button></div>
       </div>
     </div>
   </div>
 
-  <!-- pairing modal -->
+  <div class="composer" id="composer">
+    <textarea id="text" placeholder="Type a message: Good morning, Had lunch, I'm thinking of you..."></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="sendBtn" class="btn">Send live</button>
+      <button id="clearBtn" class="btn ghost">Clear remote</button>
+    </div>
+    <div class="small">Messages are shared instantly. First time: create or join a pairing code.</div>
+  </div>
+
   <div id="pairModal" class="overlay" style="display:none" role="dialog" aria-modal="true">
     <div class="modal">
-      <h2>Welcome — create or join a pairing code</h2>
-      <p class="small">Create a unique code (example: <em>ourcode123</em>) and share it with the other person. All messages saved under that code.</p>
-      <div style="display:flex;gap:12px;justify-content:center;margin-top:12px">
+      <h2>Welcome to Peace Page</h2>
+      <p>Create a new pairing code or join an existing one so both of you see the same message.</p>
+      <div style="display:flex;gap:12px;justify-content:center">
         <button id="createPair" class="btn">Create</button>
-        <button id="joinPair" class="ghost">Join</button>
+        <button id="joinPair" class="btn ghost">Join</button>
       </div>
 
       <div id="createBox" style="display:none;margin-top:14px">
-        <div class="small">Enter a code (2–20 chars):</div>
-        <input id="createInput" placeholder="e.g. ourcode123" style="margin-top:8px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%" />
+        <div class="small">Enter a code you want to use (4–12 chars):</div>
+        <input id="createInput" placeholder="e.g. ourcode123" style="margin-top:8px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%" />
         <div style="margin-top:12px"><button id="doCreate" class="btn">Create & Use</button></div>
       </div>
 
-      <div id="joinBox" style="display:none;margin-top:12px">
+      <div id="joinBox" style="display:none;margin-top:10px">
         <div class="small">Enter the pairing code you were given:</div>
-        <input id="joinInput" placeholder="Enter code" style="margin-top:8px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%" />
-        <div style="margin-top:12px"><button id="doJoin" class="btn">Join</button></div>
+        <input id="joinInput" placeholder="Enter code" style="margin-top:8px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%" />
+        <div style="margin-top:10px"><button id="doJoin" class="btn">Join</button></div>
       </div>
     </div>
   </div>
@@ -87,32 +102,35 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
-    import { getDatabase, ref, push, set, get, onChildAdded, remove, off } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-    // ---------- Firebase config (replace databaseURL if different) ----------
+    // ---------- your firebase config (replaced as requested) ----------
     const firebaseConfig = {
       apiKey: "AIzaSyAbJ1VjQVqMG-AHtdV4lrWW_0uZJ-UGNUs",
       authDomain: "silent-e1320.firebaseapp.com",
-      databaseURL: "https://silent-e1320-default-rtdb.firebaseio.com",
       projectId: "silent-e1320",
       storageBucket: "silent-e1320.firebasestorage.app",
       messagingSenderId: "643377091397",
       appId: "1:643377091397:web:198116cc05160954db242c",
       measurementId: "G-RM0MG0SE6T"
     };
-    // -------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------
 
-    // init firebase
+    // initialize
     const app = initializeApp(firebaseConfig);
-    try { getAnalytics(app); } catch(e) { /* ignore analytics issues */ }
+    try { getAnalytics(app); } catch(e) { /* analytics may not initialize in some contexts */ }
+
     const db = getDatabase(app);
+    const pairingPath = 'peacepage/pairing';
+    const latestPath = 'peacepage/latestMessage';
+    const pairingRef = ref(db, pairingPath);
+    const latestRef = ref(db, latestPath);
 
     // DOM
-    const messagesEl = document.getElementById('messages');
-    const chatEl = document.getElementById('chat');
+    const msgEl = document.getElementById('msg');
     const textEl = document.getElementById('text');
     const sendBtn = document.getElementById('sendBtn');
-    const clearBtnTop = document.getElementById('clearBtnTop');
+    const clearBtn = document.getElementById('clearBtn');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const pairModal = document.getElementById('pairModal');
     const createPairBtn = document.getElementById('createPair');
@@ -123,204 +141,135 @@
     const joinInput = document.getElementById('joinInput');
     const doCreate = document.getElementById('doCreate');
     const doJoin = document.getElementById('doJoin');
-    const ppStatus = document.getElementById('pp-status');
-    const forgetBtn = document.getElementById('forgetBtn');
+    const statusEl = document.getElementById('pp-status');
 
-    const LOCAL_PAIR_KEY = 'peacepage_pair_code_chat_v1';
-    const CLIENT_ID_KEY = 'peacepage_client_id_v1';
-    let pairCode = null;
-    let messagesPath = null;
-    let attached = false;
+    const LOCAL_PAIR_KEY = 'peacepage_pair_code_rt_v1';
 
-    function setStatus(s){
-      if (ppStatus) ppStatus.textContent = 'Status: ' + s;
-      console.log('[pp]', s);
-    }
+    function setStatus(s){ if(statusEl) statusEl.textContent = 'Status: '+s; console.log('[pp]', s); }
     function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
-
-    function clientId(){
-      let id = localStorage.getItem(CLIENT_ID_KEY);
-      if (!id){ id = 'c_' + Math.random().toString(36).slice(2,9); localStorage.setItem(CLIENT_ID_KEY, id); }
-      return id;
+    function showMessage(text, ts){
+      msgEl.style.opacity = '0';
+      setTimeout(()=>{
+        const timeStr = ts ? new Date(ts).toLocaleString() : '';
+        msgEl.innerHTML = `<div>${escapeHtml(text)}</div><div class="small" style="margin-top:12px;opacity:.9">${timeStr}</div>`;
+        msgEl.style.transform = 'translateY(6vh) scale(.98)';
+        msgEl.style.opacity = '1';
+        setTimeout(()=>{ msgEl.style.transform = '' }, 50);
+      }, 200);
     }
 
-    function appendMessage(data){
-      const isMine = data.sender === clientId();
-      const row = document.createElement('div');
-      row.className = 'msg-row ' + (isMine ? 'me' : 'them');
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble ' + (isMine ? 'me' : 'them');
-      const textNode = document.createElement('div');
-      textNode.innerHTML = escapeHtml(data.text || '');
-      bubble.appendChild(textNode);
-      const meta = document.createElement('div');
-      meta.className = 'meta';
-      const time = data.t ? new Date(data.t).toLocaleString() : '';
-      meta.textContent = (isMine ? 'You' : 'Them') + ' · ' + time;
-      bubble.appendChild(meta);
-      row.appendChild(bubble);
-      messagesEl.appendChild(row);
-      // keep DOM bounded
-      while (messagesEl.children.length > 1000) messagesEl.removeChild(messagesEl.firstChild);
-      // scroll to bottom
-      chatEl.scrollTop = chatEl.scrollHeight + 200;
-    }
-
-    // attach listener for current pair
-    function attachListeners(){
-      if (!pairCode || attached) return;
-      attached = true;
-      messagesPath = `peacepage/messages/${pairCode}`;
-      const nodeRef = ref(db, messagesPath);
-      // clear DOM to avoid duplicates
-      messagesEl.innerHTML = '';
-      setStatus('listening for messages');
-      onChildAdded(nodeRef, snap => {
-        const d = snap.val();
-        if (d) appendMessage(d);
-        setStatus('listening');
-      }, err => {
-        console.error('onChildAdded error', err);
-        setStatus('realtime error');
-      });
-    }
-
-    // detach listeners when forgetting or repairing
-    function detachListeners(){
-      if (!pairCode) return;
+    // read pairing (once)
+    async function getRemotePairing(){
       try{
-        const nodeRef = ref(db, `peacepage/messages/${pairCode}`);
-        off(nodeRef); // remove all listeners for that ref
-      }catch(e){ /* ignore */ }
-      attached = false;
-    }
-
-    // helpers to read/write pairing node
-    async function readRemotePair(){
-      try{
-        const snap = await get(ref(db, 'peacepage/pairing'));
+        const snap = await get(pairingRef);
         if (!snap.exists()) return null;
-        return snap.val().code ?? null;
-      }catch(e){ console.warn('readRemotePair', e); return null; }
+        const d = snap.val();
+        return d?.code ?? null;
+      }catch(e){ console.warn('getRemotePairing', e); return null; }
     }
-    async function writeRemotePair(code){
+
+    // set pairing (overwrite)
+    async function setRemotePairing(code){
       try{
-        await set(ref(db, 'peacepage/pairing'), { code, updatedAt: Date.now() });
+        await set(pairingRef, { code, updatedAt: Date.now() });
         return true;
-      }catch(e){ console.error('writeRemotePair', e); return false; }
+      }catch(e){ console.error('setRemotePairing', e); return false; }
     }
 
-    // send message
-    async function sendMessage(text){
-      if (!pairCode){ pairModal.style.display = 'flex'; setStatus('no pairing'); return; }
-      setStatus('validating pairing...');
-      const remote = await readRemotePair();
-      if (!remote){ alert('No pairing created in cloud. Create first.'); setStatus('no remote'); return; }
-      if (remote !== pairCode){ alert('Local pairing mismatch. Re-pair.'); setStatus('pair mismatch'); pairModal.style.display = 'flex'; return; }
-      const nodeRef = ref(db, `peacepage/messages/${pairCode}`);
-      try{
-        setStatus('sending...');
-        await push(nodeRef, { text, t: Date.now(), sender: clientId() });
-        setStatus('sent');
-      }catch(e){
-        console.error('send error', e);
-        setStatus('send failed');
-        alert('Failed to send.');
-      }
-    }
-
-    // clear chat
-    async function clearChat(){
-      if (!pairCode) return alert('No pairing set.');
-      if (!confirm('Clear chat history for this pairing?')) return;
-      try{
-        await remove(ref(db, `peacepage/messages/${pairCode}`));
-        messagesEl.innerHTML = '';
-        setStatus('cleared');
-      }catch(e){ console.error('clear error', e); alert('Failed to clear.'); }
-    }
-
-    // forget local pairing
-    function forgetLocal(){
-      if (!confirm('Forget pairing on this device?')) return;
-      detachListeners();
-      localStorage.removeItem(LOCAL_PAIR_KEY);
-      pairCode = null;
-      messagesEl.innerHTML = '';
-      attached = false;
-      pairModal.style.display = 'flex';
-      setStatus('forgot pairing');
-    }
-
-    // UI events
-    sendBtn.addEventListener('click', ()=>{ const t = (textEl.value || '').trim(); if (!t) return; sendMessage(t); textEl.value=''; });
-    textEl.addEventListener('keydown', e=>{ if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendBtn.click(); });
-    clearBtnTop.addEventListener('click', clearChat);
-    forgetBtn.addEventListener('click', forgetLocal);
-    fullscreenBtn.addEventListener('click', ()=>{ const el=document.documentElement; if (!document.fullscreenElement) el.requestFullscreen?.(); else document.exitFullscreen?.(); });
-
-    createPairBtn.addEventListener('click', ()=>{ createBox.style.display='block'; joinBox.style.display='none'; createInput.focus(); });
-    joinPairBtn.addEventListener('click', ()=>{ joinBox.style.display='block'; createBox.style.display='none'; joinInput.focus(); });
-
-    doCreate.addEventListener('click', async ()=>{
-      const code = (createInput.value || '').trim();
-      if (!code || code.length < 2) return alert('Enter a code (2–20 chars).');
-      setStatus('creating pairing...');
-      const ok = await writeRemotePair(code);
-      if (!ok){ alert('Create failed'); setStatus('create failed'); return; }
-      localStorage.setItem(LOCAL_PAIR_KEY, code);
-      pairCode = code;
-      pairModal.style.display = 'none';
-      setStatus('paired (creator)');
-      // attach listeners
-      attachListeners();
+    // realtime listener for latest message
+    onValue(latestRef, (snapshot) => {
+      if (!snapshot.exists()) { showMessage('No messages yet — send one below.'); setStatus('connected'); return; }
+      const d = snapshot.val();
+      showMessage(d.text || '', d.t || null);
+      flash110();
+      setStatus('connected');
+    }, (err) => {
+      console.error('onValue error', err);
+      setStatus('realtime error');
     });
 
-    doJoin.addEventListener('click', async ()=>{
-      const code = (joinInput.value || '').trim();
-      if (!code) return alert('Enter code to join.');
-      setStatus('checking pairing...');
-      const remote = await readRemotePair();
-      if (!remote){ alert('No pairing created. Ask other to create.'); setStatus('no remote'); return; }
-      if (code !== remote){ alert('Pairing code incorrect.'); setStatus('join failed'); return; }
-      localStorage.setItem(LOCAL_PAIR_KEY, code);
-      pairCode = code;
-      pairModal.style.display = 'none';
-      setStatus('paired (joined)');
-      attachListeners();
-    });
-
-    // init
+    // initial load & pairing modal logic
     (async function init(){
       try{
         setStatus('initializing...');
         const local = localStorage.getItem(LOCAL_PAIR_KEY);
-        const remote = await readRemotePair();
+        const remote = await getRemotePairing();
         if (!local){
           pairModal.style.display = 'flex';
           setStatus('waiting for pairing');
         } else {
           if (remote && remote === local){
-            pairCode = local;
             pairModal.style.display = 'none';
             setStatus('paired (restored)');
-            attachListeners();
           } else if (!remote){
-            // remote empty — ask user to create or join
             pairModal.style.display = 'flex';
             setStatus('no remote pairing');
           } else {
-            // mismatch
             pairModal.style.display = 'flex';
             setStatus('pair mismatch');
           }
         }
-      }catch(e){
-        console.error('init error', e);
-        setStatus('init error');
-        pairModal.style.display = 'flex';
-      }
+        const latestSnap = await get(latestRef);
+        if (latestSnap.exists()) showMessage(latestSnap.val().text || '', latestSnap.val().t || null);
+        else showMessage('No messages yet — send one below.');
+      }catch(e){ console.error('init', e); setStatus('init error'); }
     })();
+
+    // UI handlers
+    createPairBtn.addEventListener('click', ()=>{ createBox.style.display='block'; joinBox.style.display='none'; createInput.focus(); });
+    joinPairBtn.addEventListener('click', ()=>{ joinBox.style.display='block'; createBox.style.display='none'; joinInput.focus(); });
+
+    doCreate.addEventListener('click', async ()=>{
+      const code = (createInput.value || '').trim();
+      if (!code || code.length < 2) return alert('Enter a code (2–12 chars).');
+      setStatus('creating pairing...');
+      const ok = await setRemotePairing(code);
+      if (!ok) { alert('Create failed'); setStatus('create failed'); return; }
+      localStorage.setItem(LOCAL_PAIR_KEY, code);
+      pairModal.style.display = 'none';
+      setStatus('paired (creator)');
+      alert('Pairing created — share the code with the other person.');
+    });
+
+    doJoin.addEventListener('click', async ()=>{
+      const code = (joinInput.value || '').trim();
+      if (!code) return alert('Enter the pairing code to join.');
+      setStatus('checking pairing...');
+      const remote = await getRemotePairing();
+      if (!remote) { alert('No pairing code set yet. Ask the other person to create one.'); setStatus('no remote'); return; }
+      if (code !== remote) { alert('Pairing code incorrect.'); setStatus('join failed'); return; }
+      localStorage.setItem(LOCAL_PAIR_KEY, code);
+      pairModal.style.display = 'none';
+      setStatus('paired (joined)');
+      alert('Paired successfully — you can now send messages.');
+    });
+
+    sendBtn.addEventListener('click', async ()=>{
+      const text = (textEl.value || '').trim();
+      if (!text) return alert('Please type a message.');
+      const local = localStorage.getItem(LOCAL_PAIR_KEY) || '';
+      if (!local){ pairModal.style.display='flex'; return; }
+      setStatus('validating pairing...');
+      const remote = await getRemotePairing();
+      if (!remote) { alert('No pairing code set yet. Ask the other person.'); setStatus('no remote'); pairModal.style.display='flex'; return; }
+      if (local !== remote){ alert('Local pairing does not match remote. Re-join or create.'); setStatus('pair mismatch'); pairModal.style.display='flex'; return; }
+      try{
+        await set(latestRef, { text, t: Date.now() });
+        textEl.value = '';
+        setStatus('message sent');
+      }catch(e){ console.error('send error', e); setStatus('send failed'); alert('Failed to send.'); }
+    });
+
+    clearBtn.addEventListener('click', async ()=>{
+      if (!confirm('Clear the shared message for both sides?')) return;
+      try{ await set(latestRef, { text: '', t: Date.now() }); setStatus('cleared'); }catch(e){ console.error(e); alert('Failed to clear.'); }
+    });
+
+    fullscreenBtn.addEventListener('click', ()=>{ const el=document.documentElement; if (!document.fullscreenElement) el.requestFullscreen?.(); else document.exitFullscreen?.(); });
+
+    textEl.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendBtn.click(); });
+
+    function flash110(){ const nums = document.querySelectorAll('.num'); nums.forEach(n=>{ try{ n.animate([{transform:'scale(1)'},{transform:'scale(1.25)'},{transform:'scale(1)'}],{duration:700,easing:'ease-out'}); }catch(e){} }); }
   </script>
 </body>
 </html>
