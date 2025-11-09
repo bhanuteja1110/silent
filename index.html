@@ -146,219 +146,214 @@
   </div>
 
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    // Your Supabase config (already provided)
-    const SUPABASE_URL = 'https://fabmujbbfejiecflftfx.supabase.co'
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhYm11amJiZmVqaWVjZmxmdGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2NTg5NDMsImV4cCI6MjA3ODIzNDk0M30.myD00IXOL0c6h8UdC0KIddSiALhjD6vwyT-_koOd_s0'
+    // Supabase config
+    const SUPABASE_URL = 'https://fabmujbbfejiecflftfx.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhYm11amJiZmVqaWVjZmxmdGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2NTg5NDMsImV4cCI6MjA3ODIzNDk0M30.myD00IXOL0c6h8UdC0KIddSiALhjD6vwyT-_koOd_s0';
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // DOM refs
-    const msgEl = document.getElementById('msg')
-    const textEl = document.getElementById('text')
-    const sendBtn = document.getElementById('sendBtn')
-    const clearBtn = document.getElementById('clearBtn')
-    const fullscreenBtn = document.getElementById('fullscreenBtn')
+    // Elements
+    const msgEl = document.getElementById('msg');
+    const textEl = document.getElementById('text');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
 
-    const pairModal = document.getElementById('pairModal')
-    const createPairBtn = document.getElementById('createPair')
-    const joinPairBtn = document.getElementById('joinPair')
-    const afterCreate = document.getElementById('afterCreate')
-    const createdCodeEl = document.getElementById('createdCode')
-    const doneCreateBtn = document.getElementById('doneCreate')
-    const joinBox = document.getElementById('joinBox')
-    const joinInput = document.getElementById('joinInput')
-    const doJoinBtn = document.getElementById('doJoin')
+    const pairModal = document.getElementById('pairModal');
+    const createPairBtn = document.getElementById('createPair');
+    const joinPairBtn = document.getElementById('joinPair');
+    const afterCreate = document.getElementById('afterCreate');
+    const createdCodeEl = document.getElementById('createdCode');
+    const doneCreateBtn = document.getElementById('doneCreate');
+    const joinBox = document.getElementById('joinBox');
+    const joinInput = document.getElementById('joinInput');
+    const doJoinBtn = document.getElementById('doJoin');
 
-    // pairing local key
-    const LOCAL_PAIR_KEY = 'peacepage_pair_code_v1'
-    let paired = false
+    const LOCAL_PAIR_KEY = 'peacepage_pair_code_v1';
+    let paired = false;
 
     // helpers
-    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])) }
-
-    function showMessage(text, ts) {
-      msgEl.style.opacity = 0
-      setTimeout(()=>{
-        const timeStr = ts ? new Date(ts).toLocaleString() : ''
-        msgEl.innerHTML = `<div>${escapeHtml(text)}</div><div class="small" style="margin-top:12px;opacity:.9">${timeStr}</div>`
-        msgEl.style.transform = 'translateY(6vh) scale(.98)'
-        msgEl.style.opacity = 1
-        setTimeout(()=>{ msgEl.style.transform = '' }, 50)
-      }, 200)
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
     }
 
-    async function loadLatest() {
-      try {
+    function showMessage(text, ts){
+      msgEl.style.opacity = '0';
+      setTimeout(()=>{
+        const timeStr = ts ? new Date(ts).toLocaleString() : '';
+        msgEl.innerHTML = `<div>${escapeHtml(text)}</div><div class="small" style="margin-top:12px;opacity:.9">${timeStr}</div>`;
+        msgEl.style.transform = 'translateY(6vh) scale(.98)';
+        msgEl.style.opacity = '1';
+        setTimeout(()=>{ msgEl.style.transform = '' }, 50);
+      }, 200);
+    }
+
+    async function loadLatest(){
+      try{
         const { data, error } = await supabase
           .from('latest_message')
           .select('*')
           .eq('id','latest')
           .limit(1)
-          .single()
-        if (error) { console.warn('loadLatest error', error); showMessage('No messages yet — send one below.'); return }
-        if (data && data.text) showMessage(data.text, data.updated_at)
-        else showMessage('No messages yet — send one below.')
-      } catch (e) {
-        console.warn('loadLatest exception', e)
-        showMessage('No messages yet — send one below.')
+          .maybeSingle();
+        if (error) { console.warn('loadLatest error', error); showMessage('No messages yet — send one below.'); return; }
+        if (data && data.text) showMessage(data.text, data.updated_at);
+        else showMessage('No messages yet — send one below.');
+      }catch(e){
+        console.warn('loadLatest exception', e);
+        showMessage('No messages yet — send one below.');
       }
     }
 
-    // Realtime subscription
-    // Use explicit filter on id so only the latest row triggers
-    const sub = supabase
-      .from('latest_message:id=eq.latest')
-      .on('INSERT', payload => handleRealtime(payload.new))
-      .on('UPDATE', payload => handleRealtime(payload.new))
-      .on('DELETE', payload => { showMessage('No messages yet — send one below.') })
-      .subscribe()
+    // Realtime subscription: filter by id=latest
+    (function subscribeRealtime(){
+      try{
+        supabase
+          .from('latest_message:id=eq.latest')
+          .on('INSERT', payload => handleRealtime(payload.new))
+          .on('UPDATE', payload => handleRealtime(payload.new))
+          .on('DELETE', _ => showMessage('No messages yet — send one below.'))
+          .subscribe();
+      }catch(e){
+        console.error('subscribeRealtime error', e);
+      }
+    })();
 
     function handleRealtime(rec){
-      if (!rec) return
-      if (rec.text) showMessage(rec.text, rec.updated_at)
-      else showMessage('No messages yet — send one below.')
-      flash110()
+      if (!rec) return;
+      if (rec.text) showMessage(rec.text, rec.updated_at);
+      else showMessage('No messages yet — send one below.');
+      flash110();
     }
 
     // pairing DB helpers
-    async function getRemotePairing() {
-      try {
+    async function getRemotePairing(){
+      try{
         const { data, error } = await supabase
           .from('pairing')
           .select('code')
           .eq('id','main')
           .limit(1)
-          .single()
-        if (error) { console.warn('getPairing error', error); return null }
-        return data?.code ?? null
-      } catch(e){ console.warn('getPairing exception', e); return null }
+          .maybeSingle();
+        if (error){ console.warn('getPairing error', error); return null; }
+        return data?.code ?? null;
+      }catch(e){ console.warn('getPairing exception', e); return null; }
     }
 
-    async function setRemotePairing(code) {
-      try {
+    async function setRemotePairing(code){
+      try{
         const { error } = await supabase
           .from('pairing')
-          .upsert({ id: 'main', code, updated_at: new Date().toISOString() })
-        if (error) { console.error('setRemotePairing error', error); return false }
-        return true
-      } catch(e){ console.error('setRemotePairing exception', e); return false }
+          .upsert({ id: 'main', code, updated_at: new Date().toISOString() }, { returning: 'minimal' });
+        if (error){ console.error('setRemotePairing error', error); return false; }
+        return true;
+      }catch(e){ console.error('setRemotePairing exception', e); return false; }
     }
 
-    // UI: Create pairing
+    // Create pairing
     createPairBtn.addEventListener('click', async ()=>{
-      // generate a friendly code (4 digits) — you can increase length if wanted
-      const code = String(Math.floor(1000 + Math.random()*9000))
-      const ok = await setRemotePairing(code)
-      if (!ok) return alert('Failed to create pairing. Try again.')
-      createdCodeEl.textContent = code
-      afterCreate.style.display = 'block'
-      joinBox.style.display = 'none'
-      // save locally
-      localStorage.setItem(LOCAL_PAIR_KEY, code)
-      paired = true
-    })
+      try{
+        const code = String(Math.floor(1000 + Math.random()*9000));
+        const ok = await setRemotePairing(code);
+        if (!ok) return alert('Failed to create pairing. Try again.');
+        createdCodeEl.textContent = code;
+        afterCreate.style.display = 'block';
+        joinBox.style.display = 'none';
+        localStorage.setItem(LOCAL_PAIR_KEY, code);
+        paired = true;
+      }catch(e){ console.error(e); alert('Create pairing failed.'); }
+    });
 
-    doneCreateBtn.addEventListener('click', ()=>{
-      pairModal.style.display = 'none'
-    })
+    doneCreateBtn.addEventListener('click', ()=>{ pairModal.style.display = 'none'; });
 
-    // UI: Join pairing
-    joinPairBtn.addEventListener('click', ()=>{
-      joinBox.style.display = 'block'
-      afterCreate.style.display = 'none'
-      joinInput.focus()
-    })
+    // Join pairing
+    joinPairBtn.addEventListener('click', ()=>{ joinBox.style.display = 'block'; afterCreate.style.display = 'none'; joinInput.focus(); });
 
     doJoinBtn.addEventListener('click', async ()=>{
-      const code = (joinInput.value || '').trim()
-      if (!code) return alert('Enter the pairing code to join.')
-      const remote = await getRemotePairing()
-      if (!remote) return alert('No pairing code set yet. Ask the other person to create one first.')
-      if (code !== remote) return alert('Pairing code incorrect.')
-      // matched — save locally and close modal
-      localStorage.setItem(LOCAL_PAIR_KEY, code)
-      paired = true
-      pairModal.style.display = 'none'
-      alert('Paired successfully — you can now send messages.')
-    })
+      try{
+        const code = (joinInput.value || '').trim();
+        if (!code) return alert('Enter the pairing code to join.');
+        const remote = await getRemotePairing();
+        if (!remote) return alert('No pairing code set yet. Ask the other person to create one first.');
+        if (code !== remote) return alert('Pairing code incorrect.');
+        localStorage.setItem(LOCAL_PAIR_KEY, code);
+        paired = true;
+        pairModal.style.display = 'none';
+        alert('Paired successfully — you can now send messages.');
+      }catch(e){ console.error(e); alert('Join failed.'); }
+    });
 
-    // send message (only if paired locally)
+    // Send message
     sendBtn.addEventListener('click', async ()=>{
-      const text = textEl.value.trim()
-      if (!text) return alert('Please type a message.')
-      const local = localStorage.getItem(LOCAL_PAIR_KEY) || ''
-      if (!local) {
-        // show modal to create/join
-        pairModal.style.display = 'flex'
-        return
-      }
-      // ensure remote code exists and matches local (quick check)
-      const remote = await getRemotePairing()
-      if (!remote) return alert('No pairing code set yet. Ask the other person to create one first.')
-      if (local !== remote) {
-        // local mismatch — prompt user to re-join
-        alert('Local pairing does not match remote. Please join again.')
-        pairModal.style.display = 'flex'
-        return
-      }
-
-      // upsert latest message
-      try {
-        const { error } = await supabase
-          .from('latest_message')
-          .upsert({ id: 'latest', text, updated_at: new Date().toISOString() }, { returning: 'minimal' })
-        if (error) { console.error('upsert error', error); alert('Failed to send.'); return }
-        textEl.value = ''
-      } catch(e){
-        console.error('send exception', e); alert('Failed to send.')
-      }
-    })
-
-    clearBtn.addEventListener('click', async ()=>{
-      if (!confirm('Clear the shared message for both sides?')) return
-      try {
-        const { error } = await supabase
-          .from('latest_message')
-          .upsert({ id: 'latest', text: '', updated_at: new Date().toISOString() }, { returning: 'minimal' })
-        if (error) { console.error(error); alert('Failed to clear.'); }
-      } catch(e){ console.error('clear exception', e); alert('Failed to clear.') }
-    })
-
-    fullscreenBtn.addEventListener('click', ()=>{
-      const el = document.documentElement
-      if (!document.fullscreenElement) el.requestFullscreen?.(); else document.exitFullscreen?.();
-    })
-
-    // Auto-show modal if no local pairing, otherwise validate once and hide modal
-    ;(async function init() {
-      const local = localStorage.getItem(LOCAL_PAIR_KEY)
-      if (!local) {
-        // show modal so user chooses create/join
-        pairModal.style.display = 'flex'
-      } else {
-        // validate remote quickly; if mismatch leave modal closed but allow user to open by clearing local storage manually
-        const remote = await getRemotePairing()
-        if (remote && remote === local) {
-          paired = true
-          pairModal.style.display = 'none'
-        } else {
-          // keep modal hidden but show a small toast? For now, show modal so user can re-join
-          pairModal.style.display = 'flex'
+      try{
+        const text = (textEl.value || '').trim();
+        if (!text) return alert('Please type a message.');
+        const local = localStorage.getItem(LOCAL_PAIR_KEY) || '';
+        if (!local){
+          pairModal.style.display = 'flex';
+          return;
         }
-      }
-      await loadLatest()
-    })()
+        const remote = await getRemotePairing();
+        if (!remote) return alert('No pairing code set yet. Ask the other person to create one first.');
+        if (local !== remote){
+          alert('Local pairing does not match remote. Please join again.');
+          pairModal.style.display = 'flex';
+          return;
+        }
+        const { error } = await supabase
+          .from('latest_message')
+          .upsert({ id: 'latest', text, updated_at: new Date().toISOString() }, { returning: 'minimal' });
+        if (error){ console.error('upsert error', error); alert('Failed to send.'); return; }
+        textEl.value = '';
+      }catch(e){ console.error('send exception', e); alert('Failed to send.'); }
+    });
 
-    // convenience: ctrl/cmd+enter to send
+    // Clear message
+    clearBtn.addEventListener('click', async ()=>{
+      try{
+        if (!confirm('Clear the shared message for both sides?')) return;
+        const { error } = await supabase
+          .from('latest_message')
+          .upsert({ id: 'latest', text: '', updated_at: new Date().toISOString() }, { returning: 'minimal' });
+        if (error){ console.error(error); alert('Failed to clear.'); }
+      }catch(e){ console.error('clear exception', e); alert('Failed to clear.'); }
+    });
+
+    // Fullscreen
+    fullscreenBtn.addEventListener('click', ()=>{
+      const el = document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen?.(); else document.exitFullscreen?.();
+    });
+
+    // Init: show pairing modal if no local code, otherwise validate and hide modal
+    (async function init(){
+      try{
+        const local = localStorage.getItem(LOCAL_PAIR_KEY);
+        if (!local){
+          pairModal.style.display = 'flex';
+        } else {
+          const remote = await getRemotePairing();
+          if (remote && remote === local){
+            paired = true;
+            pairModal.style.display = 'none';
+          } else {
+            pairModal.style.display = 'flex';
+          }
+        }
+        await loadLatest();
+      }catch(e){ console.error('init exception', e); }
+    })();
+
+    // ctrl/cmd+enter to send
     textEl.addEventListener('keydown', e=>{ if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendBtn.click(); });
 
+    // small 110 flash
     function flash110(){
-      const nums = document.querySelectorAll('.num')
+      const nums = document.querySelectorAll('.num');
       nums.forEach(n=>{
-        n.animate([{transform:'scale(1)'},{transform:'scale(1.25)'},{transform:'scale(1)'}],{duration:700,easing:'ease-out'})
-      })
+        try{ n.animate([{transform:'scale(1)'},{transform:'scale(1.25)'},{transform:'scale(1)'}],{duration:700,easing:'ease-out'}); }catch(e){/* ignore */}});
     }
   </script>
 </body>
