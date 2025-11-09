@@ -8,62 +8,32 @@
     :root{--bg:#0b1020;--card:rgba(255,255,255,0.06);--accent:#ff758f;--muted:rgba(255,255,255,0.75);--bubble-me:#ff758f;--bubble-them:#2b2f45}
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
     body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), transparent 10%), radial-gradient(ellipse at 90% 90%, rgba(86,163,255,0.05), transparent 20%), var(--bg);color:var(--muted);overflow:hidden}
-    /* floating shapes (kept minimal) */
-    .float-wrap{position:fixed;inset:0;pointer-events:none;z-index:0}
-    .float{position:absolute;border-radius:50%;opacity:0.12;filter:blur(6px);mix-blend-mode:screen;animation:drift 18s linear infinite}
-    .float.h1{width:420px;height:420px;background:linear-gradient(135deg,#ff9fb3,#ff758f);left:-60px;top:10%}
-    .float.h2{width:300px;height:300px;background:linear-gradient(135deg,#6fb8ff,#86d0ff);right:-80px;bottom:5%}
-    @keyframes drift{0%{transform:translateY(0)}50%{transform:translateY(-30vh)}100%{transform:translateY(0)}}
-
-    /* layout */
     .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5rem;box-sizing:border-box}
-    .card{width:min(980px,96%);height:min(780px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));backdrop-filter: blur(8px);border-radius:18px;padding:0;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(2,6,23,0.6);overflow:hidden;position:relative;z-index:2}
-
-    /* header */
+    .card{width:min(980px,96%);height:min(780px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));backdrop-filter: blur(8px);border-radius:18px;padding:0;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(2,6,23,0.6);overflow:hidden;position:relative}
     .header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.03)}
-    .header .title{font-weight:700;color:white;font-size:18px}
-    .header .controls{display:flex;gap:8px;align-items:center}
-
-    /* chat area */
+    .title{font-weight:700;color:white;font-size:18px}
+    .controls{display:flex;gap:8px;align-items:center}
     .chat{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
     .messages{display:flex;flex-direction:column;gap:8px}
-    .msg-row{max-width:78%;display:flex}
-    .me{margin-left:auto;justify-content:flex-end}
-    .them{margin-right:auto;justify-content:flex-start}
+    .msg-row{max-width:78%;display:flex;flex-direction:column}
+    .me{align-self:flex-end}
+    .them{align-self:flex-start}
     .bubble{padding:10px 14px;border-radius:14px;color:white;font-weight:600;line-height:1.15;box-shadow:0 6px 18px rgba(2,6,23,0.45);word-break:break-word}
     .bubble.me{background:linear-gradient(90deg,var(--bubble-me),#ff9f77);border-bottom-right-radius:4px}
     .bubble.them{background:rgba(255,255,255,0.03);color:var(--muted);border-bottom-left-radius:4px}
-
-    .meta{font-size:11px;opacity:0.7;margin-top:6px;text-align:right}
-
-    /* composer */
+    .meta{font-size:11px;opacity:0.85;margin-top:6px;color:rgba(255,255,255,0.8)}
     .composer{display:flex;gap:10px;padding:12px;border-top:1px solid rgba(255,255,255,0.03);align-items:end;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.02))}
     .composer textarea{flex:1;min-height:56px;max-height:140px;background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;color:var(--muted);resize:none}
     .btn{background:linear-gradient(90deg,var(--accent),#ff9f77);border:none;padding:10px 14px;border-radius:10px;color:#0b1020;font-weight:700;cursor:pointer}
-    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
-
-    /* small utilities */
-    .small{font-size:12px;opacity:0.85;color:rgba(255,255,255,0.8)}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+    .small{font-size:12px;opacity:0.8}
     #pp-status{position:fixed;left:14px;bottom:14px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.45);color:#fff;font-size:12px;z-index:50}
-
-    /* pairing modal */
     .overlay{position:fixed;inset:0;background:linear-gradient(rgba(3,6,15,0.55),rgba(3,6,15,0.7));display:flex;align-items:center;justify-content:center;z-index:60}
     .modal{width:min(520px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.65);text-align:center;color:var(--muted)}
-
-    /* responsive */
-    @media (max-width:720px){
-      .card{height:95vh;width:98vw;border-radius:12px}
-      .header{padding:10px}
-      .chat{padding:12px}
-      .composer{padding:10px}
-    }
+    @media (max-width:720px){ .card{height:95vh;width:98vw;border-radius:12px} .header{padding:10px} .chat{padding:12px} .composer{padding:10px} }
   </style>
 </head>
 <body>
-  <div class="float-wrap" aria-hidden>
-    <div class="float h1"></div><div class="float h2"></div>
-  </div>
-
   <div class="stage">
     <div class="card" role="main" aria-live="polite">
       <div class="header">
@@ -80,7 +50,7 @@
       </div>
 
       <div class="composer">
-        <textarea id="text" placeholder="Type a message — press Ctrl/Cmd+Enter to send"></textarea>
+        <textarea id="text" placeholder="Type a message — Ctrl/Cmd+Enter to send"></textarea>
         <div style="display:flex;flex-direction:column;gap:8px">
           <button id="sendBtn" class="btn">Send</button>
         </div>
@@ -92,14 +62,14 @@
   <div id="pairModal" class="overlay" style="display:none" role="dialog" aria-modal="true">
     <div class="modal">
       <h2>Welcome — create or join a pairing code</h2>
-      <p class="small">Create a unique code (example: <em>ourcode123</em>) and share it with the other person. All messages will be stored under that code.</p>
+      <p class="small">Create a unique code (example: <em>ourcode123</em>) and share it with the other person. All messages saved under that code.</p>
       <div style="display:flex;gap:12px;justify-content:center;margin-top:12px">
         <button id="createPair" class="btn">Create</button>
         <button id="joinPair" class="ghost">Join</button>
       </div>
 
       <div id="createBox" style="display:none;margin-top:14px">
-        <div class="small">Enter a code you want to use (2–20 chars):</div>
+        <div class="small">Enter a code (2–20 chars):</div>
         <input id="createInput" placeholder="e.g. ourcode123" style="margin-top:8px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%" />
         <div style="margin-top:12px"><button id="doCreate" class="btn">Create & Use</button></div>
       </div>
@@ -117,13 +87,13 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
-    import { getDatabase, ref, push, set, get, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, push, set, get, onChildAdded, remove, off } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-    // ---------- Firebase config (replace databaseURL if your DB URL is different) ----------
+    // ---------- Firebase config (replace databaseURL if different) ----------
     const firebaseConfig = {
       apiKey: "AIzaSyAbJ1VjQVqMG-AHtdV4lrWW_0uZJ-UGNUs",
       authDomain: "silent-e1320.firebaseapp.com",
-      databaseURL: "https://silent-e1320-default-rtdb.firebaseio.com", // if different, replace with your DB URL
+      databaseURL: "https://silent-e1320-default-rtdb.firebaseio.com",
       projectId: "silent-e1320",
       storageBucket: "silent-e1320.firebasestorage.app",
       messagingSenderId: "643377091397",
@@ -134,10 +104,10 @@
 
     // init firebase
     const app = initializeApp(firebaseConfig);
-    try { getAnalytics(app); } catch(e){ /* ignore analytics issues */ }
+    try { getAnalytics(app); } catch(e) { /* ignore analytics issues */ }
     const db = getDatabase(app);
 
-    // DOM refs
+    // DOM
     const messagesEl = document.getElementById('messages');
     const chatEl = document.getElementById('chat');
     const textEl = document.getElementById('text');
@@ -157,117 +127,138 @@
     const forgetBtn = document.getElementById('forgetBtn');
 
     const LOCAL_PAIR_KEY = 'peacepage_pair_code_chat_v1';
+    const CLIENT_ID_KEY = 'peacepage_client_id_v1';
     let pairCode = null;
-    let messagesRef = null;
-    let childListenersAttached = false;
+    let messagesPath = null;
+    let attached = false;
 
-    function setStatus(s){ if(ppStatus) ppStatus.textContent = 'Status: ' + s; console.log('[pp]', s); }
+    function setStatus(s){
+      if (ppStatus) ppStatus.textContent = 'Status: ' + s;
+      console.log('[pp]', s);
+    }
     function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
 
-    // render a single message bubble (append)
-    function appendMessageBubble(data, isMine){
+    function clientId(){
+      let id = localStorage.getItem(CLIENT_ID_KEY);
+      if (!id){ id = 'c_' + Math.random().toString(36).slice(2,9); localStorage.setItem(CLIENT_ID_KEY, id); }
+      return id;
+    }
+
+    function appendMessage(data){
+      const isMine = data.sender === clientId();
       const row = document.createElement('div');
       row.className = 'msg-row ' + (isMine ? 'me' : 'them');
       const bubble = document.createElement('div');
       bubble.className = 'bubble ' + (isMine ? 'me' : 'them');
-      bubble.innerHTML = escapeHtml(data.text || '');
+      const textNode = document.createElement('div');
+      textNode.innerHTML = escapeHtml(data.text || '');
+      bubble.appendChild(textNode);
       const meta = document.createElement('div');
       meta.className = 'meta';
       const time = data.t ? new Date(data.t).toLocaleString() : '';
-      meta.textContent = time;
+      meta.textContent = (isMine ? 'You' : 'Them') + ' · ' + time;
       bubble.appendChild(meta);
       row.appendChild(bubble);
       messagesEl.appendChild(row);
-      // limit retention in DOM (optional): keep last 500 messages to avoid memory growth
+      // keep DOM bounded
       while (messagesEl.children.length > 1000) messagesEl.removeChild(messagesEl.firstChild);
-      // auto-scroll to bottom
+      // scroll to bottom
       chatEl.scrollTop = chatEl.scrollHeight + 200;
     }
 
-    // attach listeners for new child messages in the current pairing
-    function attachMessageListeners(){
-      if (!messagesRef || childListenersAttached) return;
-      childListenersAttached = true;
-      onChildAdded(messagesRef, (snap) => {
-        const data = snap.val();
-        if (!data) return;
-        const isMine = (localStorage.getItem(LOCAL_PAIR_KEY) === pairCode);
-        appendMessageBubble(data, isMine && data.sender === getClientId());
-      }, (err) => {
+    // attach listener for current pair
+    function attachListeners(){
+      if (!pairCode || attached) return;
+      attached = true;
+      messagesPath = `peacepage/messages/${pairCode}`;
+      const nodeRef = ref(db, messagesPath);
+      // clear DOM to avoid duplicates
+      messagesEl.innerHTML = '';
+      setStatus('listening for messages');
+      onChildAdded(nodeRef, snap => {
+        const d = snap.val();
+        if (d) appendMessage(d);
+        setStatus('listening');
+      }, err => {
         console.error('onChildAdded error', err);
         setStatus('realtime error');
       });
-      setStatus('listening for messages');
     }
 
-    // utility to generate a simple client id so we can mark which messages are from this device
-    function getClientId(){
-      let id = localStorage.getItem('peacepage_client_id_v1');
-      if (!id){
-        id = 'c_' + Math.random().toString(36).slice(2,9);
-        localStorage.setItem('peacepage_client_id_v1', id);
-      }
-      return id;
-    }
-
-    // create or join pairing helpers
-    async function getRemotePairing(){
+    // detach listeners when forgetting or repairing
+    function detachListeners(){
+      if (!pairCode) return;
       try{
-        const snap = await get(ref(db, `peacepage/pairing`));
+        const nodeRef = ref(db, `peacepage/messages/${pairCode}`);
+        off(nodeRef); // remove all listeners for that ref
+      }catch(e){ /* ignore */ }
+      attached = false;
+    }
+
+    // helpers to read/write pairing node
+    async function readRemotePair(){
+      try{
+        const snap = await get(ref(db, 'peacepage/pairing'));
         if (!snap.exists()) return null;
         return snap.val().code ?? null;
-      }catch(e){ console.warn('getRemotePairing', e); return null; }
+      }catch(e){ console.warn('readRemotePair', e); return null; }
     }
-
-    async function setRemotePairing(code){
+    async function writeRemotePair(code){
       try{
-        await set(ref(db, `peacepage/pairing`), { code, updatedAt: Date.now() });
+        await set(ref(db, 'peacepage/pairing'), { code, updatedAt: Date.now() });
         return true;
-      }catch(e){ console.error('setRemotePairing', e); return false; }
+      }catch(e){ console.error('writeRemotePair', e); return false; }
     }
 
-    // send message (push under messages/{pairCode})
+    // send message
     async function sendMessage(text){
-      if (!pairCode) { pairModal.style.display = 'flex'; return; }
-      const remote = await getRemotePairing();
-      if (!remote) { alert('No pairing code set in the cloud yet. Create one first.'); setStatus('no remote pairing'); return; }
+      if (!pairCode){ pairModal.style.display = 'flex'; setStatus('no pairing'); return; }
+      setStatus('validating pairing...');
+      const remote = await readRemotePair();
+      if (!remote){ alert('No pairing created in cloud. Create first.'); setStatus('no remote'); return; }
       if (remote !== pairCode){ alert('Local pairing mismatch. Re-pair.'); setStatus('pair mismatch'); pairModal.style.display = 'flex'; return; }
-      const node = ref(db, `peacepage/messages/${pairCode}`);
+      const nodeRef = ref(db, `peacepage/messages/${pairCode}`);
       try{
-        await push(node, { text, t: Date.now(), sender: getClientId() });
+        setStatus('sending...');
+        await push(nodeRef, { text, t: Date.now(), sender: clientId() });
         setStatus('sent');
-      }catch(e){ console.error('push error', e); setStatus('send failed'); alert('Failed to send.'); }
+      }catch(e){
+        console.error('send error', e);
+        setStatus('send failed');
+        alert('Failed to send.');
+      }
     }
 
-    // clear chat for this pairing
+    // clear chat
     async function clearChat(){
       if (!pairCode) return alert('No pairing set.');
-      if (!confirm('Clear entire chat history for this pairing?')) return;
+      if (!confirm('Clear chat history for this pairing?')) return;
       try{
         await remove(ref(db, `peacepage/messages/${pairCode}`));
-        // also clear DOM
         messagesEl.innerHTML = '';
         setStatus('cleared');
       }catch(e){ console.error('clear error', e); alert('Failed to clear.'); }
     }
 
-    // forget pairing locally (keeps remote pairing)
-    function forgetPairingLocal(){
+    // forget local pairing
+    function forgetLocal(){
+      if (!confirm('Forget pairing on this device?')) return;
+      detachListeners();
       localStorage.removeItem(LOCAL_PAIR_KEY);
       pairCode = null;
       messagesEl.innerHTML = '';
+      attached = false;
       pairModal.style.display = 'flex';
       setStatus('forgot pairing');
     }
 
-    // UI wiring
-    sendBtn.addEventListener('click', ()=>{ const t = textEl.value.trim(); if (!t) return; sendMessage(t); textEl.value=''; });
-    textEl.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { sendBtn.click(); } });
+    // UI events
+    sendBtn.addEventListener('click', ()=>{ const t = (textEl.value || '').trim(); if (!t) return; sendMessage(t); textEl.value=''; });
+    textEl.addEventListener('keydown', e=>{ if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendBtn.click(); });
     clearBtnTop.addEventListener('click', clearChat);
-    forgetBtn.addEventListener('click', ()=>{ if (confirm('Forget pairing on this device?')) forgetPairingLocal(); });
+    forgetBtn.addEventListener('click', forgetLocal);
     fullscreenBtn.addEventListener('click', ()=>{ const el=document.documentElement; if (!document.fullscreenElement) el.requestFullscreen?.(); else document.exitFullscreen?.(); });
 
-    // pairing modal events
     createPairBtn.addEventListener('click', ()=>{ createBox.style.display='block'; joinBox.style.display='none'; createInput.focus(); });
     joinPairBtn.addEventListener('click', ()=>{ joinBox.style.display='block'; createBox.style.display='none'; joinInput.focus(); });
 
@@ -275,76 +266,61 @@
       const code = (createInput.value || '').trim();
       if (!code || code.length < 2) return alert('Enter a code (2–20 chars).');
       setStatus('creating pairing...');
-      const ok = await setRemotePairing(code);
-      if (!ok) { alert('Failed to create pairing'); setStatus('create failed'); return; }
+      const ok = await writeRemotePair(code);
+      if (!ok){ alert('Create failed'); setStatus('create failed'); return; }
       localStorage.setItem(LOCAL_PAIR_KEY, code);
       pairCode = code;
-      messagesRef = ref(db, `peacepage/messages/${pairCode}`);
       pairModal.style.display = 'none';
-      setStatus('paired (creator) - listening');
-      attachMessageListeners();
+      setStatus('paired (creator)');
+      // attach listeners
+      attachListeners();
     });
 
     doJoin.addEventListener('click', async ()=>{
       const code = (joinInput.value || '').trim();
       if (!code) return alert('Enter code to join.');
       setStatus('checking pairing...');
-      const remote = await getRemotePairing();
-      if (!remote) { alert('No pairing created yet. Ask the other person to create one.'); setStatus('no remote'); return; }
-      if (code !== remote) { alert('Pairing code incorrect.'); setStatus('join failed'); return; }
+      const remote = await readRemotePair();
+      if (!remote){ alert('No pairing created. Ask other to create.'); setStatus('no remote'); return; }
+      if (code !== remote){ alert('Pairing code incorrect.'); setStatus('join failed'); return; }
       localStorage.setItem(LOCAL_PAIR_KEY, code);
       pairCode = code;
-      messagesRef = ref(db, `peacepage/messages/${pairCode}`);
       pairModal.style.display = 'none';
-      setStatus('paired (joined) - listening');
-      attachMessageListeners();
+      setStatus('paired (joined)');
+      attachListeners();
     });
 
-    // init: check local pairing, validate, and attach listeners
+    // init
     (async function init(){
       try{
         setStatus('initializing...');
         const local = localStorage.getItem(LOCAL_PAIR_KEY);
-        const remote = await getRemotePairing();
+        const remote = await readRemotePair();
         if (!local){
           pairModal.style.display = 'flex';
           setStatus('waiting for pairing');
         } else {
-          // if remote exists and matches, restore; otherwise show modal so user can re-pair
           if (remote && remote === local){
             pairCode = local;
-            messagesRef = ref(db, `peacepage/messages/${pairCode}`);
             pairModal.style.display = 'none';
-            setStatus('paired (restored) - listening');
-            attachMessageListeners();
+            setStatus('paired (restored)');
+            attachListeners();
           } else if (!remote){
-            // remote empty: let the user create remote or join
+            // remote empty — ask user to create or join
             pairModal.style.display = 'flex';
             setStatus('no remote pairing');
           } else {
+            // mismatch
             pairModal.style.display = 'flex';
             setStatus('pair mismatch');
           }
         }
-      }catch(e){ console.error('init error', e); setStatus('init error'); pairModal.style.display='flex'; }
+      }catch(e){
+        console.error('init error', e);
+        setStatus('init error');
+        pairModal.style.display = 'flex';
+      }
     })();
-
-    // helper: attach onChildAdded once the messagesRef is set
-    function attachMessageListeners(){
-      if (!messagesRef) return;
-      // clear any existing DOM before attaching to avoid duplicates if re-attaching
-      messagesEl.innerHTML = '';
-      // onChildAdded is imported signature-style; call it
-      onChildAdded(messagesRef, (snap)=>{
-        const data = snap.val();
-        if (!data) return;
-        const isMine = (data.sender === getClientId());
-        appendMessageBubble(data, isMine);
-      }, (err)=>{
-        console.error('attach onChildAdded error', err);
-        setStatus('realtime error');
-      });
-    }
   </script>
 </body>
 </html>
