@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Peace Page — Shared Live Messages (Supabase)</title>
+  <style>
+    :root{--bg:#0b1020;--card:rgba(255,255,255,0.06);--accent:#ff758f;--muted:rgba(255,255,255,0.75)}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+    body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), transparent 10%), radial-gradient(ellipse at 90% 90%, rgba(86,163,255,0.05), transparent 20%), var(--bg);overflow:hidden;color:var(--muted)}
+
+    /* floating shapes */
+    .float-wrap{position:fixed;inset:0;pointer-events:none}
+    .float{position:absolute;border-radius:50%;opacity:0.18;filter:blur(6px);mix-blend-mode:screen;animation: drift 18s linear infinite}
+    .float.h1{width:420px;height:420px;background:linear-gradient(135deg,#ff9fb3,#ff758f);left:-60px;top:10%}
+    .float.h2{width:300px;height:300px;background:linear-gradient(135deg,#6fb8ff,#86d0ff);right:-80px;bottom:5%;animation-duration:26s}
+    .float.s1{width:120px;height:120px;background:linear-gradient(135deg,#ffd27a,#ff9f5a);left:20%;top:60%;opacity:0.12}
+    .float.s2{width:80px;height:80px;background:linear-gradient(135deg,#9bffdd,#5ad8c9);right:22%;top:15%;opacity:0.12;animation-duration:14s}
+    @keyframes drift{0%{transform:translateY(0) translateX(0) rotate(0)}50%{transform:translateY(-30vh) translateX(6vw) rotate(180deg)}100%{transform:translateY(0) translateX(0) rotate(360deg)}}
+
+    /* floating tiny hearts and numbers */
+    .hearts{position:fixed;inset:0;pointer-events:none}
+    .heart, .num{position:absolute;font-size:20px;opacity:0.85;transform:translateY(40vh);animation:rise 6s linear infinite}
+    .heart:nth-child(1){left:10%;animation-delay:0s}
+    .heart:nth-child(2){left:25%;animation-delay:1.2s}
+    .heart:nth-child(3){left:42%;animation-delay:0.6s}
+    .heart:nth-child(4){left:65%;animation-delay:1.9s}
+    .heart:nth-child(5){left:82%;animation-delay:0.3s}
+
+    /* Number 110 elements (bigger, bolder) */
+    .num{font-weight:800;font-size:34px;opacity:0.95;letter-spacing:1px}
+    .num.n1{left:18%;animation-delay:0.4s}
+    .num.n2{left:48%;animation-delay:1.0s}
+    .num.n3{left:78%;animation-delay:1.6s}
+
+    @keyframes rise{0%{transform:translateY(70vh) scale(.6);opacity:0}30%{opacity:.95}100%{transform:translateY(-20vh) scale(1.05);opacity:0}}
+
+    /* center display */
+    .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:3rem}
+    .card{width:min(1000px,95%);height:min(600px,86%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));backdrop-filter: blur(8px);border-radius:18px;padding:2rem;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(2,6,23,0.6);overflow:hidden}
+
+    .display{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+    .message{font-size:5.2vmin;line-height:1.05;text-align:center;font-weight:600;color:white;padding:1rem;max-width:90%;transition:transform .7s cubic-bezier(.22,.9,.3,1),opacity .6s;}
+
+    .controls{display:flex;gap:12px;align-items:center;justify-content:center;padding-top:14px}
+    .btn{background:linear-gradient(90deg,var(--accent),#ff9f77);border:none;padding:10px 16px;border-radius:12px;color:#0b1020;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(255,117,143,0.18)}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.08);color:var(--muted)}
+
+    /* composer modal */
+    .composer{position:fixed;right:28px;bottom:28px;background:var(--card);border-radius:14px;padding:12px;backdrop-filter: blur(6px);display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 30px rgba(2,6,23,0.5)}
+    .composer textarea, .composer input{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;color:var(--muted);min-width:260px}
+    .composer textarea{min-height:80px;resize:vertical}
+    .small{font-size:12px;opacity:0.8}
+
+    .footer{display:flex;justify-content:space-between;align-items:center;padding-top:8px;font-size:13px;color:rgba(255,255,255,0.6)}
+
+    /* responsive adjustments */
+    @media (max-width:900px){
+      .float.h1, .float.h2{display:none}
+      .card{height:80vh;padding:1.25rem}
+      .composer{right:16px;left:16px;bottom:16px}
+      .composer textarea{min-width:unset;width:100%}
+    }
+
+    @media (max-width:480px){
+      .message{font-size:8.5vmin}
+      .num{font-size:28px}
+      .heart{font-size:18px}
+      .card{border-radius:12px;padding:12px;height:78vh}
+      .composer{padding:10px;border-radius:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="float-wrap">
+    <div class="float h1" aria-hidden></div>
+    <div class="float h2" aria-hidden></div>
+    <div class="float s1" aria-hidden></div>
+    <div class="float s2" aria-hidden></div>
+  </div>
+
+  <div class="hearts" aria-hidden>
+    <div class="heart">❤️</div>
+    <div class="heart">💕</div>
+    <div class="heart">💫</div>
+    <div class="heart">💖</div>
+    <div class="heart">✨</div>
+
+    <!-- number 110 animated elements (three copies for staggered effect) -->
+    <div class="num n1">110</div>
+    <div class="num n2">110</div>
+    <div class="num n3">110</div>
+  </div>
+
+  <div class="stage">
+    <div class="card" role="main">
+      <div class="display">
+        <div id="msg" class="message" aria-live="polite">No messages yet — send one below.</div>
+      </div>
+
+      <div class="footer">
+        <div class="small">Peace Page — shared live messages (Supabase)</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="fullscreenBtn" class="btn">Full Screen</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="composer" id="composer">
+    <input id="pair" placeholder="Pairing code (set by one of you)" />
+    <textarea id="text" placeholder="Type a message: Good morning, Had lunch, I'm thinking of you..."></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="setPairBtn" class="btn ghost">Set pairing code</button>
+      <button id="sendBtn" class="btn">Send live</button>
+      <button id="clearBtn" class="btn ghost">Clear remote</button>
+    </div>
+    <div class="small">This uses Supabase Realtime with a simple pairing code. It's fast — later we can add stronger security.</div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    // YOUR SUPABASE CONFIG (you provided these values)
+    const SUPABASE_URL = 'https://fabmujbbfejiecflftfx.supabase.co'
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhYm11amJiZmVqaWVjZmxmdGZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2NTg5NDMsImV4cCI6MjA3ODIzNDk0M30.myD00IXOL0c6h8UdC0KIddSiALhjD6vwyT-_koOd_s0'
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    // DOM refs
+    const msgEl = document.getElementById('msg')
+    const textEl = document.getElementById('text')
+    const pairEl = document.getElementById('pair')
+    const sendBtn = document.getElementById('sendBtn')
+    const setPairBtn = document.getElementById('setPairBtn')
+    const clearBtn = document.getElementById('clearBtn')
+    const fullscreenBtn = document.getElementById('fullscreenBtn')
+
+    function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])) }
+
+    function showMessage(text, ts) {
+      msgEl.style.opacity = 0
+      setTimeout(()=>{
+        const timeStr = ts ? new Date(ts).toLocaleString() : ''
+        msgEl.innerHTML = `<div>${escapeHtml(text)}</div><div class="small" style="margin-top:12px;opacity:.9">${timeStr}</div>`
+        msgEl.style.transform = 'translateY(6vh) scale(.98)'
+        msgEl.style.opacity = 1
+        setTimeout(()=>{ msgEl.style.transform = '' }, 50)
+      }, 200)
+    }
+
+    async function loadLatest() {
+      const { data, error } = await supabase
+        .from('latest_message')
+        .select('*')
+        .eq('id','latest')
+        .limit(1)
+        .single()
+      if (error) { console.warn('loadLatest error', error); showMessage('No messages yet — send one below.'); return }
+      if (data && data.text) showMessage(data.text, data.updated_at)
+      else showMessage('No messages yet — send one below.')
+    }
+
+    // Realtime subscription
+    const channel = supabase
+      .channel('public:latest_message')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'latest_message', filter: "id=eq.latest" }, payload => {
+        const rec = payload.new || payload.old
+        if (rec && rec.text) {
+          showMessage(rec.text, rec.updated_at)
+          flash110()
+        } else {
+          showMessage('No messages yet — send one below.')
+        }
+      })
+      .subscribe()
+
+    async function getRemotePairing() {
+      const { data, error } = await supabase
+        .from('pairing')
+        .select('code')
+        .eq('id','main')
+        .limit(1)
+        .single()
+      if (error) { console.warn('getPairing error', error); return null }
+      return data?.code ?? null
+    }
+
+    setPairBtn.addEventListener('click', async ()=>{
+      const code = pairEl.value.trim()
+      if (!code) return alert('Enter a short pairing code.')
+      const { error } = await supabase
+        .from('pairing')
+        .upsert({ id: 'main', code, updated_at: new Date().toISOString() })
+      if (error) { console.error(error); alert('Failed to set pairing. See console.'); return }
+      alert('Pairing code set. Share it with the other person.')
+    })
+
+    sendBtn.addEventListener('click', async ()=>{
+      const text = textEl.value.trim()
+      const code = pairEl.value.trim()
+      if (!text) return alert('Please type a message.')
+      if (!code) return alert('Enter the pairing code before sending.')
+      const remoteCode = await getRemotePairing()
+      if (!remoteCode) return alert('No pairing code has been set yet. One person must set it first.')
+      if (code !== remoteCode) return alert('Pairing code incorrect.')
+
+      const { error } = await supabase
+        .from('latest_message')
+        .upsert({ id: 'latest', text, updated_at: new Date().toISOString() }, { returning: 'minimal' })
+      if (error) { console.error('upsert error', error); alert('Failed to send.'); return }
+      textEl.value = ''
+    })
+
+    clearBtn.addEventListener('click', async ()=>{
+      if (!confirm('Clear the shared message for both sides?')) return
+      const { error } = await supabase
+        .from('latest_message')
+        .upsert({ id: 'latest', text: '', updated_at: new Date().toISOString() }, { returning: 'minimal' })
+      if (error) { console.error(error); alert('Failed to clear.'); }
+    })
+
+    fullscreenBtn.addEventListener('click', ()=>{
+      const el = document.documentElement
+      if (!document.fullscreenElement) el.requestFullscreen?.(); else document.exitFullscreen?.();
+    })
+
+    textEl.addEventListener('keydown', e=>{ if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendBtn.click(); });
+
+    function flash110(){
+      const nums = document.querySelectorAll('.num')
+      nums.forEach(n=>{
+        n.animate([{transform:'scale(1)'},{transform:'scale(1.25)'},{transform:'scale(1)'}],{duration:700,easing:'ease-out'})
+      })
+    }
+
+    loadLatest()
+  </script>
+</body>
+</html>
