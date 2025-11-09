@@ -5,10 +5,67 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Silent (Realtime DB)</title>
   <style>
-    :root{--bg:#0b1020;--card:rgba(255,255,255,0.06);--accent:#ff758f;--muted:rgba(255,255,255,0.75);--bubble-me:#ff758f;--bubble-them:#2b2f45}
+    :root{
+      --bg:#0b1020;
+      --card:rgba(255,255,255,0.06);
+      --accent:#ff758f;
+      --muted:rgba(255,255,255,0.75);
+      --bubble-me:#ff758f;
+      --bubble-them:#2b2f45
+    }
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
     body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), transparent 10%), radial-gradient(ellipse at 90% 90%, rgba(86,163,255,0.05), transparent 20%), var(--bg);color:var(--muted);overflow:hidden}
-    .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5rem;box-sizing:border-box}
+
+    /* ---------- RICH & LIVELY BACKGROUND ANIMATIONS ---------- */
+    .float-wrap { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+    .float { position:absolute; border-radius:50%; opacity:0.22; filter: blur(30px); mix-blend-mode:screen; transform-origin:center; will-change:transform, opacity; animation: float-drift 20s linear infinite; }
+    .float.h1 { width:520px; height:520px; left:-12%; top:8%; background: linear-gradient(135deg,#ff9fb3 0%, #ff758f 60%); }
+    .float.h2 { width:380px; height:380px; right:-10%; bottom:4%; background: linear-gradient(135deg,#6fb8ff 0%, #86d0ff 60%); animation-duration:28s; opacity:0.18; }
+    .float.s1 { width:160px; height:160px; left:18%; top:62%; background: linear-gradient(135deg,#ffd27a 0%, #ff9f5a 60%); opacity:0.12; animation-duration:16s; }
+    .float.s2 { width:110px; height:110px; right:20%; top:14%; background: linear-gradient(135deg,#9bffdd 0%, #5ad8c9 60%); opacity:0.12; animation-duration:14s; }
+
+    @keyframes float-drift {
+      0%   { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
+      25%  { transform: translate3d(6vw,-12vh,0) rotate(30deg) scale(1.04); }
+      50%  { transform: translate3d(0,-28vh,0) rotate(120deg) scale(1.06); }
+      75%  { transform: translate3d(-6vw,-12vh,0) rotate(220deg) scale(1.02); }
+      100% { transform: translate3d(0,0,0) rotate(360deg) scale(1); }
+    }
+
+    .hearts { position:fixed; inset:0; pointer-events:none; z-index:1; }
+    .heart, .spark, .num { position:absolute; font-size:20px; opacity:0; transform: translateY(30vh) scale(.8); will-change: transform, opacity; animation: float-rise 6.8s linear infinite; text-shadow: 0 4px 16px rgba(0,0,0,0.45); }
+    @keyframes float-rise {
+      0%   { opacity:0; transform: translate3d(0,40vh,0) scale(.8) rotate(0); filter: blur(0); }
+      10%  { opacity:0.95; transform: translate3d(var(--sx,0),20vh,0) scale(1) rotate(var(--rot,0)); }
+      55%  { opacity:0.9; transform: translate3d(calc(var(--sx,0) * -1), -10vh,0) scale(1.02) rotate(calc(var(--rot,0) + 40deg)); }
+      100% { opacity:0; transform: translate3d(0,-40vh,0) scale(1.08) rotate(calc(var(--rot,0) + 80deg)); filter: blur(2px); }
+    }
+    .heart{ font-size:22px; }
+    .spark{ font-size:16px; opacity:0.85; filter:drop-shadow(0 4px 8px rgba(255,255,255,0.08)); }
+    .num{ font-weight:900; font-size:36px; opacity:0.95; letter-spacing:1px; }
+
+    .heart.h1 { left:8%;  bottom:8%; animation-delay:0.2s; --sx:-6vw; --rot:6deg; }
+    .heart.h2 { left:22%; bottom:6%; animation-delay:1.4s; --sx:4vw; --rot:-8deg; animation-duration:7.2s; }
+    .heart.h3 { left:40%; bottom:10%; animation-delay:0.8s; --sx:-3vw; --rot:2deg; animation-duration:6.4s; }
+    .heart.h4 { left:62%; bottom:6%; animation-delay:1.9s; --sx:5vw; --rot:-12deg; animation-duration:7.6s; }
+    .heart.h5 { left:82%; bottom:12%; animation-delay:0.5s; --sx:-2vw; --rot:8deg; animation-duration:6.8s; }
+
+    .spark.s1 { left:14%; top:20%; animation-delay:0.6s; --sx:3vw; --rot:14deg; animation-duration:9s; }
+    .spark.s2 { left:76%; top:18%; animation-delay:0.3s; --sx:-3vw; --rot:-18deg; animation-duration:8.2s; }
+
+    .num.n1 { left:18%; bottom:4%; animation-delay:0.4s; animation-duration:7s; --sx:-3vw; --rot:6deg; }
+    .num.n2 { left:48%; bottom:6%; animation-delay:1.0s; animation-duration:7.6s; --sx:2vw; --rot:-10deg; }
+    .num.n3 { left:78%; bottom:5%; animation-delay:1.6s; animation-duration:6.6s; --sx:-2vw; --rot:4deg; }
+
+    .pop { animation: popPulse 700ms ease-out forwards; }
+    @keyframes popPulse {
+      0% { transform: scale(1); opacity:1; filter:drop-shadow(0 12px 30px rgba(255,117,143,0.12)); }
+      50% { transform: scale(1.25); filter:drop-shadow(0 20px 46px rgba(255,117,143,0.18)); }
+      100% { transform: scale(1); filter:drop-shadow(0 6px 20px rgba(255,117,143,0.08)); }
+    }
+
+    /* ---------- CHAT UI ---------- */
+    .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5rem;box-sizing:border-box;z-index:5}
     .card{width:min(980px,96%);height:min(780px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));backdrop-filter: blur(8px);border-radius:18px;padding:0;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(2,6,23,0.6);overflow:hidden;position:relative}
     .header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.03)}
     .title{font-weight:700;color:white;font-size:18px}
@@ -34,6 +91,29 @@
   </style>
 </head>
 <body>
+  <!-- Animated background (rich & lively) -->
+  <div class="float-wrap" aria-hidden="true">
+    <div class="float h1"></div>
+    <div class="float h2"></div>
+    <div class="float s1"></div>
+    <div class="float s2"></div>
+  </div>
+
+  <div class="hearts" aria-hidden="true">
+    <div class="heart h1">❤️</div>
+    <div class="heart h2">💕</div>
+    <div class="heart h3">💫</div>
+    <div class="heart h4">💖</div>
+    <div class="heart h5">✨</div>
+
+    <div class="spark s1">✦</div>
+    <div class="spark s2">✶</div>
+
+    <div class="num n1">110</div>
+    <div class="num n2">110</div>
+    <div class="num n3">110</div>
+  </div>
+
   <div class="stage">
     <div class="card" role="main" aria-live="polite">
       <div class="header">
@@ -89,7 +169,7 @@
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
     import { getDatabase, ref, push, set, get, onChildAdded, remove, off } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-    // ---------- Firebase config (replace databaseURL if different) ----------
+    // ---------- Firebase config (update databaseURL if yours differs) ----------
     const firebaseConfig = {
       apiKey: "AIzaSyAbJ1VjQVqMG-AHtdV4lrWW_0uZJ-UGNUs",
       authDomain: "silent-e1320.firebaseapp.com",
@@ -144,6 +224,17 @@
       return id;
     }
 
+    function flash110(){
+      const el1 = document.querySelector('.num.n1');
+      const el2 = document.querySelector('.num.n2');
+      const el3 = document.querySelector('.num.n3');
+      [el1,el2,el3].forEach(el=>{
+        if(!el) return;
+        el.classList.add('pop');
+        setTimeout(()=>el.classList.remove('pop'), 700);
+      });
+    }
+
     function appendMessage(data){
       const isMine = data.sender === clientId();
       const row = document.createElement('div');
@@ -164,6 +255,8 @@
       while (messagesEl.children.length > 1000) messagesEl.removeChild(messagesEl.firstChild);
       // scroll to bottom
       chatEl.scrollTop = chatEl.scrollHeight + 200;
+      // pulse background numbers
+      flash110();
     }
 
     // attach listener for current pair
@@ -272,7 +365,6 @@
       pairCode = code;
       pairModal.style.display = 'none';
       setStatus('paired (creator)');
-      // attach listeners
       attachListeners();
     });
 
@@ -306,11 +398,9 @@
             setStatus('paired (restored)');
             attachListeners();
           } else if (!remote){
-            // remote empty — ask user to create or join
             pairModal.style.display = 'flex';
             setStatus('no remote pairing');
           } else {
-            // mismatch
             pairModal.style.display = 'flex';
             setStatus('pair mismatch');
           }
