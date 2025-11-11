@@ -72,7 +72,7 @@
     .controls{display:flex;gap:8px;align-items:center}
     .chat{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
     .messages{display:flex;flex-direction:column;gap:8px}
-    .msg-row{max-width:78%;display:flex;flex-direction:column}
+    .msg-row{max-width:78%;display:flex;flex-direction:column;position:relative}
     .me{align-self:flex-end}
     .them{align-self:flex-start}
     .bubble{padding:10px 14px;border-radius:14px;color:white;font-weight:600;line-height:1.15;box-shadow:0 6px 18px rgba(2,6,23,0.45);word-break:break-word}
@@ -89,36 +89,65 @@
     .modal{width:min(520px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.65);text-align:center;color:var(--muted)}
     @media (max-width:720px){ .card{height:95vh;width:98vw;border-radius:12px} .header{padding:10px} .chat{padding:12px} .composer{padding:10px} }
 
-    /* Preserve whitespace and allow selection + action buttons */
+    /* Preserve whitespace and allow selection */
     .bubble { user-select: text; position: relative; }
-    .msg-pre {
-      white-space: pre-wrap;
-      font-family: inherit;
-      margin: 0;
-      color: inherit;
-      background: transparent;
-      font-size: inherit;
-      line-height: 1.25;
-    }
-    .msg-actions{
+    .msg-pre { white-space: pre-wrap; font-family: inherit; margin: 0; color: inherit; background: transparent; font-size: inherit; line-height: 1.25; }
+
+    /* Arrow/menu button (appears on hover) */
+    .msg-menu-button {
+      position: absolute;
+      right: -6px; /* slightly outside bubble */
+      top: 6px;
+      width:34px;
+      height:34px;
+      border-radius:50%;
       display:flex;
-      gap:8px;
-      margin-top:8px;
-      justify-content:flex-end;
-    }
-    .msg-action-btn{
-      background: rgba(255,255,255,0.04);
-      border:1px solid rgba(255,255,255,0.04);
+      align-items:center;
+      justify-content:center;
+      background:transparent;
+      border: none;
       color:var(--muted);
-      padding:6px 8px;
-      border-radius:8px;
       cursor:pointer;
-      font-size:12px;
+      opacity:0;
+      transition:opacity .15s ease, transform .12s ease;
+      z-index:8;
     }
-    .msg-action-btn:hover{
-      background: rgba(255,255,255,0.06);
-      color:white;
+    .msg-row:hover .msg-menu-button { opacity:1; transform:translateY(-2px); }
+
+    /* small menu popup */
+    .msg-options {
+      position: absolute;
+      right: 44px;
+      top: 6px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border-radius:10px;
+      padding:6px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:120px;
+      z-index:9;
     }
+    .msg-option {
+      padding:8px 10px;
+      font-size:13px;
+      border-radius:8px;
+      background:transparent;
+      color:var(--muted);
+      border:none;
+      text-align:left;
+      cursor:pointer;
+    }
+    .msg-option:hover { background: rgba(255,255,255,0.04); color:white; }
+    .msg-options.hidden { display:none; }
+
+    /* adjust menu for mobile (position left) */
+    @media (max-width:520px){
+      .msg-options { right: auto; left: 8px; top: auto; bottom: 44px; }
+      .msg-menu-button { right: 8px; }
+    }
+
   </style>
 </head>
 <body>
@@ -266,19 +295,30 @@
       });
     }
 
+    // Utility: close any open message menus
+    function closeAllMenus(){
+      document.querySelectorAll('.msg-options').forEach(m=> m.classList.add('hidden'));
+    }
+    // close when clicking outside
+    document.addEventListener('click', e=> {
+      // if click not inside a msg-options or msg-menu-button, close menus
+      if (!e.target.closest('.msg-options') && !e.target.closest('.msg-menu-button')) {
+        closeAllMenus();
+      }
+    });
+
     // Render a message with id (firebase key) and data
     function appendMessage(id, data){
-      // id: firebase push key
-      // data: { text, t, sender }
       const isMine = data.sender === clientId();
       const row = document.createElement('div');
       row.className = 'msg-row ' + (isMine ? 'me' : 'them');
       row.id = 'msg-' + id;
+      row.style.position = 'relative';
 
       const bubble = document.createElement('div');
       bubble.className = 'bubble ' + (isMine ? 'me' : 'them');
 
-      // Preserve formatting using <pre> and textContent
+      // Preserve formatting using <pre> (textContent to prevent HTML rendering)
       const pre = document.createElement('pre');
       pre.className = 'msg-pre';
       pre.textContent = data.text || '';
@@ -291,51 +331,96 @@
       meta.textContent = (isMine ? 'You' : 'Them') + ' · ' + time;
       bubble.appendChild(meta);
 
-      // actions: copy + delete (delete only for messages this client sent)
-      const actions = document.createElement('div');
-      actions.className = 'msg-actions';
-
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'msg-action-btn';
-      copyBtn.textContent = 'Copy';
-      copyBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
+      // Arrow/menu button (appears on hover)
+      const menuBtn = document.createElement('button');
+      menuBtn.className = 'msg-menu-button';
+      menuBtn.setAttribute('aria-label', 'Message menu');
+      menuBtn.innerHTML = '&#x25B6;'; // small arrow symbol (▶) — looks neat rotated
+      // create small menu popup (hidden by default)
+      const menu = document.createElement('div');
+      menu.className = 'msg-options hidden';
+      // Copy option
+      const optCopy = document.createElement('button');
+      optCopy.className = 'msg-option';
+      optCopy.textContent = 'Copy';
+      optCopy.addEventListener('click', async (ev)=>{
+        ev.stopPropagation();
         try {
           await navigator.clipboard.writeText(data.text || '');
-          copyBtn.textContent = 'Copied';
-          setTimeout(()=> copyBtn.textContent = 'Copy', 1200);
+          optCopy.textContent = 'Copied';
+          setTimeout(()=> optCopy.textContent = 'Copy', 1200);
         } catch(err) {
           console.warn('copy fail', err);
-          // fallback: select the text
           const range = document.createRange();
           range.selectNodeContents(pre);
           const sel = window.getSelection();
           sel.removeAllRanges();
           sel.addRange(range);
         }
+        menu.classList.add('hidden');
       });
-      actions.appendChild(copyBtn);
+      menu.appendChild(optCopy);
 
+      // Delete option (only for messages sent by this client)
       if (isMine) {
-        const delBtn = document.createElement('button');
-        delBtn.className = 'msg-action-btn';
-        delBtn.textContent = 'Delete';
-        delBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          if (!confirm('Delete this message?')) return;
+        const optDel = document.createElement('button');
+        optDel.className = 'msg-option';
+        optDel.textContent = 'Delete';
+        optDel.style.color = '#ffb4b4';
+        optDel.addEventListener('click', async (ev)=>{
+          ev.stopPropagation();
+          if (!confirm('Delete this message?')) { menu.classList.add('hidden'); return; }
           try {
             await remove(ref(db, `peacepage/messages/${pairCode}/${id}`));
-            // onChildRemoved listener will remove DOM for everyone
-          } catch(err) {
+            // removal will be handled by onChildRemoved listener
+          } catch(err){
             console.error('delete msg error', err);
             alert('Delete failed. See console.');
           }
+          menu.classList.add('hidden');
         });
-        actions.appendChild(delBtn);
+        menu.appendChild(optDel);
       }
 
-      bubble.appendChild(actions);
+      // Report option
+      const optReport = document.createElement('button');
+      optReport.className = 'msg-option';
+      optReport.textContent = 'Report';
+      optReport.addEventListener('click', async (ev)=>{
+        ev.stopPropagation();
+        // push a small report object to Realtime DB
+        try {
+          await push(ref(db, `peacepage/reports/${pairCode || 'ungrouped'}`), {
+            messageId: id,
+            text: data.text || '',
+            sender: data.sender || '',
+            reporter: clientId(),
+            t: Date.now()
+          });
+          alert('Reported — we will review this message.');
+        } catch(err){
+          console.error('report error', err);
+          alert('Report failed. See console.');
+        }
+        menu.classList.add('hidden');
+      });
+      menu.appendChild(optReport);
+
+      // attach menu & button
       row.appendChild(bubble);
+      row.appendChild(menuBtn);
+      row.appendChild(menu);
+
+      // show/hide menu on button click
+      menuBtn.addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        // toggle this menu; close others
+        const isHidden = menu.classList.contains('hidden');
+        closeAllMenus();
+        if (isHidden) menu.classList.remove('hidden');
+        else menu.classList.add('hidden');
+      });
+
       messagesEl.appendChild(row);
 
       // keep DOM bounded
