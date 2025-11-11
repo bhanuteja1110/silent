@@ -148,6 +148,15 @@
       .msg-menu-button { right: 8px; }
     }
 
+    /* Delete confirmation popup specifics */
+    #deletePopup { display:none; z-index:80; backdrop-filter: blur(6px); animation: fadeIn 170ms ease; }
+    #deletePopup .modal { max-width:360px; padding:18px; }
+    #deletePopup .delete-title { color: #fff; margin: 0 0 6px 0; font-weight:700; font-size:18px; }
+    #deletePopup .delete-text { margin:0 0 14px 0; color:var(--muted); font-size:13px; }
+    @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+
+    /* lock-scroll class to prevent background scroll while modal open */
+    .lock-scroll { overflow: hidden !important; height: 100vh; }
   </style>
 </head>
 <body>
@@ -222,6 +231,18 @@
     </div>
   </div>
 
+  <!-- Delete confirmation popup (in-app) -->
+  <div id="deletePopup" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+      <h3 id="deleteTitle" class="delete-title">Delete message?</h3>
+      <p class="delete-text">This will permanently remove the message for both of you.</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="cancelDelete" class="ghost">Cancel</button>
+        <button id="confirmDelete" class="btn" style="background:linear-gradient(90deg,#ff758f,#ff9f77)">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <div id="pp-status">Status: initializing…</div>
 
   <script type="module">
@@ -266,6 +287,12 @@
     const ppStatus = document.getElementById('pp-status');
     const forgetBtn = document.getElementById('forgetBtn');
 
+    // Delete popup elements
+    const deletePopup = document.getElementById('deletePopup');
+    const cancelDeleteBtn = document.getElementById('cancelDelete');
+    const confirmDeleteBtn = document.getElementById('confirmDelete');
+    let pendingDelete = null; // { id, menuElement } when a delete is requested
+
     const LOCAL_PAIR_KEY = 'peacepage_pair_code_chat_v1';
     const CLIENT_ID_KEY = 'peacepage_client_id_v1';
     let pairCode = null;
@@ -307,6 +334,44 @@
       }
     });
 
+    // Show delete popup (in-app) for a specific message id
+    function showDeletePopup(id, menuElement){
+      pendingDelete = { id, menuElement };
+      deletePopup.style.display = 'flex';
+      // prevent background scroll while modal is open
+      document.documentElement.classList.add('lock-scroll');
+      // optionally focus confirm button
+      confirmDeleteBtn.focus();
+    }
+
+    function hideDeletePopup(){
+      pendingDelete = null;
+      deletePopup.style.display = 'none';
+      document.documentElement.classList.remove('lock-scroll');
+    }
+
+    // hook cancel/confirm actions once
+    cancelDeleteBtn.addEventListener('click', () => {
+      hideDeletePopup();
+    });
+
+    confirmDeleteBtn.addEventListener('click', async () => {
+      if (!pendingDelete || !pendingDelete.id) { hideDeletePopup(); return; }
+      const id = pendingDelete.id;
+      // close popup first for responsiveness
+      hideDeletePopup();
+      // also close the menu if provided
+      try { if (pendingDelete.menuElement) pendingDelete.menuElement.classList.add('hidden'); } catch(e){}
+      // perform deletion
+      try {
+        await remove(ref(db, `peacepage/messages/${pairCode}/${id}`));
+        setStatus('deleted');
+      } catch (err) {
+        console.error('delete msg error', err);
+        alert('Delete failed. See console.');
+      }
+    });
+
     // Render a message with id (firebase key) and data
     function appendMessage(id, data){
       const isMine = data.sender === clientId();
@@ -335,10 +400,12 @@
       const menuBtn = document.createElement('button');
       menuBtn.className = 'msg-menu-button';
       menuBtn.setAttribute('aria-label', 'Message menu');
-      menuBtn.innerHTML = '&#x25B6;'; // small arrow symbol (▶) — looks neat rotated
+      menuBtn.innerHTML = '&#x25B6;'; // small arrow symbol (▶)
+
       // create small menu popup (hidden by default)
       const menu = document.createElement('div');
       menu.className = 'msg-options hidden';
+
       // Copy option
       const optCopy = document.createElement('button');
       optCopy.className = 'msg-option';
@@ -361,23 +428,17 @@
       });
       menu.appendChild(optCopy);
 
-      // Delete option (only for messages sent by this client)
+      // Delete option (only for messages sent by this client) - uses in-app modal
       if (isMine) {
         const optDel = document.createElement('button');
         optDel.className = 'msg-option';
         optDel.textContent = 'Delete';
         optDel.style.color = '#ffb4b4';
-        optDel.addEventListener('click', async (ev)=>{
+        optDel.addEventListener('click', (ev)=>{
           ev.stopPropagation();
-          if (!confirm('Delete this message?')) { menu.classList.add('hidden'); return; }
-          try {
-            await remove(ref(db, `peacepage/messages/${pairCode}/${id}`));
-            // removal will be handled by onChildRemoved listener
-          } catch(err){
-            console.error('delete msg error', err);
-            alert('Delete failed. See console.');
-          }
+          // hide the menu and open the in-app delete popup
           menu.classList.add('hidden');
+          showDeletePopup(id, menu);
         });
         menu.appendChild(optDel);
       }
@@ -388,6 +449,7 @@
       optReport.textContent = 'Report';
       optReport.addEventListener('click', async (ev)=>{
         ev.stopPropagation();
+        menu.classList.add('hidden');
         // push a small report object to Realtime DB
         try {
           await push(ref(db, `peacepage/reports/${pairCode || 'ungrouped'}`), {
@@ -402,7 +464,6 @@
           console.error('report error', err);
           alert('Report failed. See console.');
         }
-        menu.classList.add('hidden');
       });
       menu.appendChild(optReport);
 
@@ -508,7 +569,7 @@
       }
     }
 
-    // clear chat
+    // clear chat (keeps native confirm for simplicity)
     async function clearChat(){
       if (!pairCode) return alert('No pairing set.');
       if (!confirm('Clear chat history for this pairing?')) return;
@@ -519,7 +580,7 @@
       }catch(e){ console.error('clear error', e); alert('Failed to clear.'); }
     }
 
-    // forget local pairing
+    // forget local pairing (keeps native confirm for simplicity)
     function forgetLocal(){
       if (!confirm('Forget pairing on this device?')) return;
       detachListeners();
