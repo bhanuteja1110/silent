@@ -88,6 +88,37 @@
     .overlay{position:fixed;inset:0;background:linear-gradient(rgba(3,6,15,0.55),rgba(3,6,15,0.7));display:flex;align-items:center;justify-content:center;z-index:60}
     .modal{width:min(520px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.65);text-align:center;color:var(--muted)}
     @media (max-width:720px){ .card{height:95vh;width:98vw;border-radius:12px} .header{padding:10px} .chat{padding:12px} .composer{padding:10px} }
+
+    /* Preserve whitespace and allow selection + action buttons */
+    .bubble { user-select: text; position: relative; }
+    .msg-pre {
+      white-space: pre-wrap;
+      font-family: inherit;
+      margin: 0;
+      color: inherit;
+      background: transparent;
+      font-size: inherit;
+      line-height: 1.25;
+    }
+    .msg-actions{
+      display:flex;
+      gap:8px;
+      margin-top:8px;
+      justify-content:flex-end;
+    }
+    .msg-action-btn{
+      background: rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.04);
+      color:var(--muted);
+      padding:6px 8px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .msg-action-btn:hover{
+      background: rgba(255,255,255,0.06);
+      color:white;
+    }
   </style>
 </head>
 <body>
@@ -167,7 +198,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
-    import { getDatabase, ref, push, set, get, onChildAdded, remove, off } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, push, set, get, onChildAdded, onChildRemoved, remove, off } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     // ---------- Firebase config (update databaseURL if yours differs) ----------
     const firebaseConfig = {
@@ -235,26 +266,84 @@
       });
     }
 
-    function appendMessage(data){
+    // Render a message with id (firebase key) and data
+    function appendMessage(id, data){
+      // id: firebase push key
+      // data: { text, t, sender }
       const isMine = data.sender === clientId();
       const row = document.createElement('div');
       row.className = 'msg-row ' + (isMine ? 'me' : 'them');
+      row.id = 'msg-' + id;
+
       const bubble = document.createElement('div');
       bubble.className = 'bubble ' + (isMine ? 'me' : 'them');
-      const textNode = document.createElement('div');
-      textNode.innerHTML = escapeHtml(data.text || '');
-      bubble.appendChild(textNode);
+
+      // Preserve formatting using <pre> and textContent
+      const pre = document.createElement('pre');
+      pre.className = 'msg-pre';
+      pre.textContent = data.text || '';
+      bubble.appendChild(pre);
+
+      // meta line
       const meta = document.createElement('div');
       meta.className = 'meta';
       const time = data.t ? new Date(data.t).toLocaleString() : '';
       meta.textContent = (isMine ? 'You' : 'Them') + ' · ' + time;
       bubble.appendChild(meta);
+
+      // actions: copy + delete (delete only for messages this client sent)
+      const actions = document.createElement('div');
+      actions.className = 'msg-actions';
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'msg-action-btn';
+      copyBtn.textContent = 'Copy';
+      copyBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          await navigator.clipboard.writeText(data.text || '');
+          copyBtn.textContent = 'Copied';
+          setTimeout(()=> copyBtn.textContent = 'Copy', 1200);
+        } catch(err) {
+          console.warn('copy fail', err);
+          // fallback: select the text
+          const range = document.createRange();
+          range.selectNodeContents(pre);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      });
+      actions.appendChild(copyBtn);
+
+      if (isMine) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'msg-action-btn';
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Delete this message?')) return;
+          try {
+            await remove(ref(db, `peacepage/messages/${pairCode}/${id}`));
+            // onChildRemoved listener will remove DOM for everyone
+          } catch(err) {
+            console.error('delete msg error', err);
+            alert('Delete failed. See console.');
+          }
+        });
+        actions.appendChild(delBtn);
+      }
+
+      bubble.appendChild(actions);
       row.appendChild(bubble);
       messagesEl.appendChild(row);
+
       // keep DOM bounded
       while (messagesEl.children.length > 1000) messagesEl.removeChild(messagesEl.firstChild);
+
       // scroll to bottom
       chatEl.scrollTop = chatEl.scrollHeight + 200;
+
       // pulse background numbers
       flash110();
     }
@@ -268,13 +357,25 @@
       // clear DOM to avoid duplicates
       messagesEl.innerHTML = '';
       setStatus('listening for messages');
+
+      // on child added -> render message with its key
       onChildAdded(nodeRef, snap => {
+        const id = snap.key;
         const d = snap.val();
-        if (d) appendMessage(d);
+        if (d) appendMessage(id, d);
         setStatus('listening');
       }, err => {
         console.error('onChildAdded error', err);
         setStatus('realtime error');
+      });
+
+      // on child removed -> remove DOM node
+      onChildRemoved(nodeRef, snap => {
+        const id = snap.key;
+        const el = document.getElementById('msg-' + id);
+        if (el) el.remove();
+      }, err => {
+        console.error('onChildRemoved error', err);
       });
     }
 
