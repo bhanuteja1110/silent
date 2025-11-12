@@ -10,8 +10,8 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helv
 body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), transparent 10%), radial-gradient(ellipse at 90% 90%, rgba(86,163,255,0.05), transparent 20%), var(--bg);color:var(--muted);overflow:hidden}
 
 /* ---------- RICH & LIVELY BACKGROUND ANIMATIONS ---------- */
-.float-wrap { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
-.float { position:absolute; border-radius:50%; opacity:0.22; filter: blur(30px); mix-blend-mode:screen; transform-origin:center; will-change:transform, opacity; animation: float-drift 20s linear infinite; }
+.float-wrap { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; contain:layout style paint; }
+.float { position:absolute; border-radius:50%; opacity:0.22; filter: blur(30px); mix-blend-mode:screen; transform-origin:center; will-change:transform; animation: float-drift 20s linear infinite; backface-visibility:hidden; }
 .float.h1 { width:520px; height:520px; left:-12%; top:8%; background: linear-gradient(135deg,#ff9fb3 0%, #ff758f 60%); }
 .float.h2 { width:380px; height:380px; right:-10%; bottom:4%; background: linear-gradient(135deg,#6fb8ff 0%, #86d0ff 60%); animation-duration:28s; opacity:0.18; }
 .float.s1 { width:160px; height:160px; left:18%; top:62%; background: linear-gradient(135deg,#ffd27a 0%, #ff9f5a 60%); opacity:0.12; animation-duration:16s; }
@@ -25,8 +25,8 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   100% { transform: translate3d(0,0,0) rotate(360deg) scale(1); }
 }
 
-.hearts { position:fixed; inset:0; pointer-events:none; z-index:1; }
-.heart, .spark, .num { position:absolute; font-size:20px; opacity:0; transform: translateY(30vh) scale(.8); will-change: transform, opacity; animation: float-rise 6.8s linear infinite; text-shadow: 0 4px 16px rgba(0,0,0,0.45); }
+.hearts { position:fixed; inset:0; pointer-events:none; z-index:1; contain:layout style paint; }
+.heart, .spark, .num { position:absolute; font-size:20px; opacity:0; transform: translateY(30vh) scale(.8); will-change: transform, opacity; animation: float-rise 6.8s linear infinite; text-shadow: 0 4px 16px rgba(0,0,0,0.45); backface-visibility:hidden; }
 @keyframes float-rise {
   0%   { opacity:0; transform: translate3d(0,40vh,0) scale(.8) rotate(0); filter: blur(0); }
   10%  { opacity:0.95; transform: translate3d(var(--sx,0),20vh,0) scale(1) rotate(var(--rot,0)); }
@@ -65,14 +65,14 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
 .controls{display:flex;gap:8px;align-items:center}
 .chat{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
 .messages{display:flex;flex-direction:column;gap:8px}
-.msg-row{max-width:78%;display:flex;flex-direction:column;position:relative;animation: msgFadeIn 0.3s ease-out forwards}
+.msg-row{max-width:78%;display:flex;flex-direction:column;position:relative;animation: msgFadeIn 0.3s ease-out forwards;contain:layout style paint;will-change:transform,opacity}
 @keyframes msgFadeIn {
   from { opacity:0; transform: translateY(8px) scale(0.98); }
   to { opacity:1; transform: translateY(0) scale(1); }
 }
 .me{align-self:flex-end}
 .them{align-self:flex-start}
-.bubble{padding:10px 14px;border-radius:14px;color:white;font-weight:600;line-height:1.15;box-shadow:0 6px 18px rgba(2,6,23,0.45);word-break:break-word;transition:transform 0.2s ease, box-shadow 0.2s ease}
+.bubble{padding:10px 14px;border-radius:14px;color:white;font-weight:600;line-height:1.15;box-shadow:0 6px 18px rgba(2,6,23,0.45);word-break:break-word;transition:transform 0.2s ease, box-shadow 0.2s ease;contain:layout style;transform:translateZ(0)}
 .bubble.me{background:linear-gradient(90deg,var(--bubble-me),#ff9f77);border-bottom-right-radius:4px}
 .bubble.them{background:rgba(255,255,255,0.03);color:var(--muted);border-bottom-left-radius:4px}
 .meta{font-size:11px;opacity:0.85;margin-top:6px;color:rgba(255,255,255,0.8);display:flex;align-items:center;gap:6px}
@@ -94,6 +94,7 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   from { opacity:0; transform: translateY(-10px) scale(0.98); }
   to { opacity:1; transform: translateY(0) scale(1); }
 }
+
 .modal-title{color:#fff;margin:0 0 6px 0;font-weight:700;font-size:18px}
 .modal-text{margin:0 0 14px 0;color:var(--muted);font-size:13px;line-height:1.5}
 
@@ -398,4 +399,81 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   0% { transform: scale(0); opacity:0; }
   50% { transform: scale(1.2); }
   100% { transform: scale(1); opacity:1; }
+}
+
+/* Share modal styles */
+#shareModal .modal { max-width:480px; padding:20px; }
+.share-link-container {
+  margin:14px 0;
+  padding:12px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+}
+.share-link-input {
+  width:100%;
+  padding:10px;
+  background:transparent;
+  border:none;
+  color:var(--muted);
+  font-size:13px;
+  font-family:monospace;
+  word-break:break-all;
+  outline:none;
+  cursor:text;
+  user-select:all;
+}
+.share-link-input:focus {
+  outline:none;
+}
+.share-warning {
+  font-size:11px;
+  opacity:0.7;
+  margin:8px 0 14px 0;
+  color:var(--muted);
+  text-align:center;
+}
+.share-buttons {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:100%;
+}
+.share-btn {
+  min-height:44px;
+  width:100%;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+.share-btn:before {
+  content:'';
+  display:inline-block;
+  width:18px;
+  height:18px;
+}
+#copyLinkBtn:before {
+  content:'📋';
+}
+#shareWhatsAppBtn:before {
+  content:'💬';
+}
+#shareTelegramBtn:before {
+  content:'✈️';
+}
+
+@media (max-width:520px) {
+  #shareModal .modal {
+    width:94%;
+    padding:16px;
+  }
+  .share-buttons {
+    gap:8px;
+  }
+  .share-btn {
+    min-height:48px;
+    font-size:15px;
+  }
 }
