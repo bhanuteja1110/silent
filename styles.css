@@ -388,6 +388,11 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
 #deletePopup .delete-title { color: #fff; margin: 0 0 6px 0; font-weight:700; font-size:18px; }
 #deletePopup .delete-text { margin:0 0 14px 0; color:var(--muted); font-size:13px; }
 
+/* encryption modal specifics */
+#encryptionModal .modal-text pre { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; max-height:220px; overflow:auto; }
+#encryptionModal dd { margin: 0 0 8px 0; color: var(--muted); font-size:13px; }
+#encryptionModal dt { font-size:13px; color:#fff; margin-top:6px; }
+
 /* All modals */
 .overlay[aria-hidden="true"] { display:none; }
 .overlay[aria-hidden="false"] { display:flex; }
