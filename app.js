@@ -66,7 +66,6 @@ const shareModal = document.getElementById('shareModal');
 const shareLinkInput = document.getElementById('shareLinkInput');
 const copyLinkBtn = document.getElementById('copyLinkBtn');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
-const shareTelegramBtn = document.getElementById('shareTelegramBtn');
 const closeShareBtn = document.getElementById('closeShareBtn');
 
 let pendingDelete = null; // { id, menuElement }
@@ -222,6 +221,36 @@ async function saveMessageEdit(messageId, newText) {
       c, iv, edited: true, editedAt: Date.now()
     });
     setStatus('edit saved');
+    
+    // Immediately update the DOM for instant feedback
+    const rowEl = document.getElementById('msg-' + messageId);
+    if (rowEl) {
+      const preEl = rowEl.querySelector('.msg-pre');
+      const metaEl = rowEl.querySelector('.meta');
+      if (preEl) {
+        preEl.textContent = newText;
+      }
+      if (metaEl) {
+        // Update meta to show edited label - get original timestamp from data attribute or parse
+        const metaText = metaEl.textContent || metaEl.innerText || '';
+        const parts = metaText.split(' · ');
+        const sender = parts[0] || (rowEl.classList.contains('me') ? 'You' : 'Them');
+        // Extract time string, removing any existing (edited) label
+        let timeStr = parts[1] ? parts[1].replace(/\(edited\)/g, '').trim() : '';
+        if (!timeStr && parts.length > 1) {
+          timeStr = parts.slice(1).join(' · ').replace(/\(edited\)/g, '').trim();
+        }
+        // If no time found, try to get from original timestamp
+        if (!timeStr) {
+          const originalTime = rowEl.getAttribute('data-timestamp');
+          if (originalTime) {
+            timeStr = new Date(parseInt(originalTime)).toLocaleString();
+          }
+        }
+        metaEl.innerHTML = sender + ' · ' + timeStr + ' <span class="edited-label">(edited)</span>';
+      }
+    }
+    
     return true;
   } catch(e) {
     console.error('edit error', e);
@@ -429,9 +458,99 @@ function detachReactionListener(messageId) {
 }
 
 /* -------------------- Message rendering -------------------- */
-function closeAllMenus(){ document.querySelectorAll('.msg-options').forEach(m=> m.classList.add('hidden')); }
-document.addEventListener('click', e=> {
-  if (!e.target.closest('.msg-options') && !e.target.closest('.msg-menu-button') && !e.target.closest('.msg-edit-box')) closeAllMenus();
+function closeAllMenus(){ 
+  document.querySelectorAll('.msg-options').forEach(m=> {
+    m.classList.remove('show');
+    // schedule adding hidden after transition end
+    setTimeout(()=> {
+      if (!m.classList.contains('show')) m.classList.add('hidden');
+    }, 140);
+  }); 
+  document.querySelectorAll('.msg-row').forEach(r=> r.classList.remove('show-menu')); 
+}
+
+function toggleMessageMenu(row, menu) {
+  const isHidden = menu.classList.contains('hidden') || !menu.classList.contains('show');
+  // close other menus first
+  closeAllMenus();
+
+  if (isHidden) {
+    const bubble = row.querySelector('.bubble');
+    if (!bubble) return;
+    const bubbleRect = bubble.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const menuWidth = Math.max(140, menu.offsetWidth || 140);
+    const menuHeightEstimate = Math.min(menu.scrollHeight || 200, viewportHeight - 40);
+
+    let left, top;
+
+    if (row.classList.contains('them')) {
+      left = bubbleRect.left - menuWidth - 8;
+      if (left < 8) left = bubbleRect.right + 8;
+    } else {
+      left = bubbleRect.right + 8;
+      if (left + menuWidth > viewportWidth - 8) left = bubbleRect.left - menuWidth - 8;
+    }
+
+    top = bubbleRect.top + 8;
+    if (top + menuHeightEstimate > viewportHeight - 8) {
+      top = Math.max(8, bubbleRect.bottom - menuHeightEstimate - 8);
+    }
+
+    // Set inline fixed positioning BEFORE showing
+    Object.assign(menu.style, {
+      position: 'fixed',
+      left: `${Math.round(left)}px`,
+      top: `${Math.round(top)}px`,
+      right: 'auto',
+      bottom: 'auto',
+      zIndex: '12000',
+      maxHeight: 'calc(100vh - 20px)',
+      overflowY: 'auto',
+      visibility: 'hidden' // start hidden, we'll animate in
+    });
+
+    // Debug: verify menu items exist
+    console.log('Opening menu for', row.id, 'menu items:', Array.from(menu.querySelectorAll('.msg-option')).map(b=>b.textContent.trim()));
+
+    // Remove hidden and animate via .show
+    menu.classList.remove('hidden');
+    // force reflow so transition works
+    void menu.offsetWidth;
+    row.classList.add('show-menu');
+
+    // slight delay so CSS transition triggers reliably
+    setTimeout(() => {
+      menu.classList.add('show');
+      menu.style.visibility = 'visible';
+    }, 8);
+
+  } else {
+    // hide gracefully with animation
+    menu.classList.remove('show');
+    // after transition completes, mark hidden and clean inline styles
+    setTimeout(() => {
+      if (!menu.classList.contains('show')) {
+        menu.classList.add('hidden');
+        menu.style.left = '';
+        menu.style.top = '';
+        menu.style.position = '';
+        menu.style.zIndex = '';
+      }
+    }, 160); // match CSS transition (~120ms + margin)
+    row.classList.remove('show-menu');
+  }
+}
+
+// Use pointerdown for more immediate behavior and to avoid race with menu show
+document.addEventListener('pointerdown', (e) => {
+  // if pointerdown on menu or menu button or edit box -> do nothing
+  if (e.target.closest('.msg-options') || e.target.closest('.msg-menu-button') || e.target.closest('.msg-edit-box')) {
+    return;
+  }
+  // otherwise close menus
+  closeAllMenus();
 });
 
 function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false){
@@ -485,6 +604,7 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
       sel.addRange(range);
     }
     menu.classList.add('hidden');
+    menu.classList.remove('show');
   });
   menu.appendChild(optCopy);
 
@@ -495,6 +615,7 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
     optEdit.addEventListener('click', (ev)=>{
       ev.stopPropagation();
       menu.classList.add('hidden');
+      menu.classList.remove('show');
       const existingEdit = bubble.querySelector('.msg-edit-box');
       if (existingEdit) {
         existingEdit.remove();
@@ -512,6 +633,7 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
     optDel.addEventListener('click', (ev)=>{
       ev.stopPropagation();
       menu.classList.add('hidden');
+      menu.classList.remove('show');
       showDeletePopup(id, menu);
     });
     menu.appendChild(optDel);
@@ -523,6 +645,7 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
   optReport.addEventListener('click', async (ev)=>{
     ev.stopPropagation();
     menu.classList.add('hidden');
+    menu.classList.remove('show');
     try {
       await push(ref(db, `peacepage/reports/${pairCode || 'ungrouped'}`), {
         messageId: id,
@@ -543,27 +666,44 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
   row.appendChild(menuBtn);
   row.appendChild(menu);
 
-  menuBtn.addEventListener('click', (ev)=>{
+  // Use pointerdown (works better on mobile/desktop) and ensure events don't bubble
+  menuBtn.setAttribute('tabindex','0'); // accessible
+  menuBtn.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault();
     ev.stopPropagation();
-    const isHidden = menu.classList.contains('hidden');
-    closeAllMenus();
-    if (isHidden) {
-      menu.classList.remove('hidden');
-      // Position menu better
-      const rect = menu.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      if (rect.right > viewportWidth - 10) {
-        menu.style.right = 'auto';
-        menu.style.left = '44px';
-      }
-      if (rect.left < 10) {
-        menu.style.left = 'auto';
-        menu.style.right = '44px';
-      }
-    } else {
-      menu.classList.add('hidden');
-    }
+    // defensive: ensure the button is on top
+    menuBtn.style.zIndex = '11001';
+    menu.style.zIndex = '12001';
+    // toggle
+    toggleMessageMenu(row, menu);
   });
+
+  // Long press support for mobile
+  let longPressTimer = null;
+  const handleTouchStart = (e) => {
+    longPressTimer = setTimeout(() => {
+      e.preventDefault();
+      toggleMessageMenu(row, menu);
+      row.classList.add('show-menu');
+    }, 500); // 500ms for long press
+  };
+  const handleTouchEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  };
+  const handleTouchMove = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  };
+
+  bubble.addEventListener('touchstart', handleTouchStart, { passive: false });
+  bubble.addEventListener('touchend', handleTouchEnd);
+  bubble.addEventListener('touchmove', handleTouchMove);
+  bubble.addEventListener('touchcancel', handleTouchEnd);
 
   return row;
 }
@@ -573,6 +713,11 @@ function appendPlainMessageDOM(id, text, timestamp, sender, isEdited = false, is
   const isMine = sender === clientId();
   const timeStr = timestamp ? new Date(timestamp).toLocaleString() : '';
   const row = createMessageElement(id, text, (isMine ? 'You' : 'Them') + ' · ' + timeStr, isMine, isEdited);
+  
+  // Store timestamp as data attribute for later reference
+  if (timestamp) {
+    row.setAttribute('data-timestamp', timestamp);
+  }
   
   if (isNew) {
     row.classList.add('just-sent');
@@ -638,6 +783,44 @@ function attachListeners(){
     detachReactionListener(id);
   }, err => {
     console.error('onChildRemoved error', err);
+  });
+
+  // Listen for message updates (edits) using onChildChanged
+  onChildChanged(nodeRef, async snap => {
+    const id = snap.key;
+    const d = snap.val();
+    if (!d) return;
+    
+    const rowEl = document.getElementById('msg-' + id);
+    if (!rowEl) return; // Message doesn't exist in DOM yet
+    
+    // Decrypt and update the message
+    if (d.c && d.iv) {
+      try {
+        const plain = await decryptWithKey(cryptoKeyCache, d.c, d.iv);
+        const preEl = rowEl.querySelector('.msg-pre');
+        const metaEl = rowEl.querySelector('.meta');
+        
+        if (preEl) {
+          preEl.textContent = plain;
+        }
+        
+        if (metaEl) {
+          const isMine = d.sender === clientId();
+          const timeStr = d.t ? new Date(d.t).toLocaleString() : '';
+          const isEdited = d.edited === true;
+          let metaText = (isMine ? 'You' : 'Them') + ' · ' + timeStr;
+          if (isEdited) {
+            metaText += ' <span class="edited-label">(edited)</span>';
+          }
+          metaEl.innerHTML = metaText;
+        }
+      } catch(e) {
+        console.warn('decrypt failed on update', e);
+      }
+    }
+  }, err => {
+    console.error('onChildChanged error', err);
   });
 }
 
@@ -811,15 +994,9 @@ function shareViaWhatsApp() {
   window.open(`https://wa.me/?text=${text}`, '_blank');
 }
 
-function shareViaTelegram() {
-  const shareUrl = encodeURIComponent(shareLinkInput.value);
-  window.open(`https://t.me/share/url?url=${shareUrl}`, '_blank');
-}
-
 // Share modal event handlers
 copyLinkBtn.addEventListener('click', copyShareLink);
 shareWhatsAppBtn.addEventListener('click', shareViaWhatsApp);
-shareTelegramBtn.addEventListener('click', shareViaTelegram);
 closeShareBtn.addEventListener('click', () => hideModal(shareModal));
 
 // Allow clicking on share link input to select all
