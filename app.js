@@ -67,6 +67,12 @@ const shareLinkInput = document.getElementById('shareLinkInput');
 const copyLinkBtn = document.getElementById('copyLinkBtn');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 const closeShareBtn = document.getElementById('closeShareBtn');
+const encryptionBtn = document.getElementById('encryptionBtn');
+const encryptionModal = document.getElementById('encryptionModal');
+const encSaltEl = document.getElementById('enc_salt');
+const encFingerprintEl = document.getElementById('enc_fingerprint');
+const copyFingerprintBtn = document.getElementById('copyFingerprintBtn');
+const closeEncryptionBtn = document.getElementById('closeEncryptionBtn');
 
 let pendingDelete = null; // { id, menuElement }
 let pendingOverwrite = null; // { code, saltBytes }
@@ -952,7 +958,7 @@ closeReportBtn.addEventListener('click', () => hideModal(reportModal));
 closeErrorBtn.addEventListener('click', () => hideModal(errorModal));
 
 // Close modals on overlay click
-[deletePopup, clearChatModal, forgetModal, overwriteModal, reportModal, errorModal, shareModal].forEach(modal => {
+[deletePopup, clearChatModal, forgetModal, overwriteModal, reportModal, errorModal, shareModal, encryptionModal].forEach(modal => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
       hideModal(modal);
@@ -1002,6 +1008,87 @@ closeShareBtn.addEventListener('click', () => hideModal(shareModal));
 // Allow clicking on share link input to select all
 shareLinkInput.addEventListener('click', function() {
   this.select();
+});
+
+/* -------------------- Encryption Info modal -------------------- */
+async function bufferToHex(buf) {
+  const b = new Uint8Array(buf);
+  return Array.from(b).map(x => x.toString(16).padStart(2,'0')).join('');
+}
+
+async function exportKeyFingerprint() {
+  try {
+    if (!cryptoKeyCache) return null;
+    // export raw AES key bytes
+    const raw = await crypto.subtle.exportKey('raw', cryptoKeyCache);
+    const digest = await crypto.subtle.digest('SHA-256', raw);
+    const hex = await bufferToHex(digest);
+    // Short friendly fingerprint for UI, show full for copying
+    return { full: hex, short: hex.slice(0,20) + '...' };
+  } catch (e) {
+    console.warn('exportKeyFingerprint error', e);
+    return null;
+  }
+}
+
+encryptionBtn?.addEventListener('click', async () => {
+  // populate fields
+  encSaltEl.textContent = 'Not available';
+  encFingerprintEl.textContent = 'Not derived';
+
+  if (pairCode) {
+    try {
+      const pairingSnap = await get(ref(db, `peacepage/pairing/${pairCode}`));
+      if (pairingSnap && pairingSnap.exists()) {
+        const info = pairingSnap.val();
+        if (info && info.salt) encSaltEl.textContent = info.salt;
+      }
+    } catch (e) {
+      console.warn('read pairing for encryption modal', e);
+    }
+  }
+
+  if (cryptoKeyCache) {
+    const fp = await exportKeyFingerprint();
+    if (fp) {
+      encFingerprintEl.textContent = fp.full.slice(0,48); // show reasonable length
+      encFingerprintEl.setAttribute('data-full-fp', fp.full);
+    }
+  }
+
+  showModal(encryptionModal);
+  // focus for accessibility
+  closeEncryptionBtn?.focus();
+});
+
+// Copy fingerprint
+copyFingerprintBtn?.addEventListener('click', async () => {
+  const full = encFingerprintEl?.getAttribute('data-full-fp');
+  if (!full) {
+    copyFingerprintBtn.textContent = 'No fingerprint';
+    setTimeout(()=> copyFingerprintBtn.textContent = 'Copy fingerprint', 1400);
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(full);
+    const prev = copyFingerprintBtn.textContent;
+    copyFingerprintBtn.textContent = 'Copied!';
+    setTimeout(()=> copyFingerprintBtn.textContent = prev, 1600);
+  } catch (err) {
+    console.warn('copy fingerprint failed', err);
+    copyFingerprintBtn.textContent = 'Copy failed';
+    setTimeout(()=> copyFingerprintBtn.textContent = 'Copy fingerprint', 1600);
+  }
+});
+
+// close handler
+closeEncryptionBtn?.addEventListener('click', () => hideModal(encryptionModal));
+
+// close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && encryptionModal && encryptionModal.getAttribute('aria-hidden') === 'false') {
+    hideModal(encryptionModal);
+  }
 });
 
 createPairBtn.addEventListener('click', ()=>{ createBox.style.display='block'; joinBox.style.display='none'; createInput.focus(); });
