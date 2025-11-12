@@ -2,162 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Silent</title>
-  <style>
-    :root{
-      --bg:#0b1020;
-      --card:rgba(255,255,255,0.06);
-      --accent:#ff758f;
-      --muted:rgba(255,255,255,0.75);
-      --bubble-me:#ff758f;
-      --bubble-them:#2b2f45
-    }
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-    body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), transparent 10%), radial-gradient(ellipse at 90% 90%, rgba(86,163,255,0.05), transparent 20%), var(--bg);color:var(--muted);overflow:hidden}
-
-    /* ---------- RICH & LIVELY BACKGROUND ANIMATIONS ---------- */
-    .float-wrap { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
-    .float { position:absolute; border-radius:50%; opacity:0.22; filter: blur(30px); mix-blend-mode:screen; transform-origin:center; will-change:transform, opacity; animation: float-drift 20s linear infinite; }
-    .float.h1 { width:520px; height:520px; left:-12%; top:8%; background: linear-gradient(135deg,#ff9fb3 0%, #ff758f 60%); }
-    .float.h2 { width:380px; height:380px; right:-10%; bottom:4%; background: linear-gradient(135deg,#6fb8ff 0%, #86d0ff 60%); animation-duration:28s; opacity:0.18; }
-    .float.s1 { width:160px; height:160px; left:18%; top:62%; background: linear-gradient(135deg,#ffd27a 0%, #ff9f5a 60%); opacity:0.12; animation-duration:16s; }
-    .float.s2 { width:110px; height:110px; right:20%; top:14%; background: linear-gradient(135deg,#9bffdd 0%, #5ad8c9 60%); opacity:0.12; animation-duration:14s; }
-
-    @keyframes float-drift {
-      0%   { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-      25%  { transform: translate3d(6vw,-12vh,0) rotate(30deg) scale(1.04); }
-      50%  { transform: translate3d(0,-28vh,0) rotate(120deg) scale(1.06); }
-      75%  { transform: translate3d(-6vw,-12vh,0) rotate(220deg) scale(1.02); }
-      100% { transform: translate3d(0,0,0) rotate(360deg) scale(1); }
-    }
-
-    .hearts { position:fixed; inset:0; pointer-events:none; z-index:1; }
-    .heart, .spark, .num { position:absolute; font-size:20px; opacity:0; transform: translateY(30vh) scale(.8); will-change: transform, opacity; animation: float-rise 6.8s linear infinite; text-shadow: 0 4px 16px rgba(0,0,0,0.45); }
-    @keyframes float-rise {
-      0%   { opacity:0; transform: translate3d(0,40vh,0) scale(.8) rotate(0); filter: blur(0); }
-      10%  { opacity:0.95; transform: translate3d(var(--sx,0),20vh,0) scale(1) rotate(var(--rot,0)); }
-      55%  { opacity:0.9; transform: translate3d(calc(var(--sx,0) * -1), -10vh,0) scale(1.02) rotate(calc(var(--rot,0) + 40deg)); }
-      100% { opacity:0; transform: translate3d(0,-40vh,0) scale(1.08) rotate(calc(var(--rot,0) + 80deg)); filter: blur(2px); }
-    }
-    .heart{ font-size:22px; }
-    .spark{ font-size:16px; opacity:0.85; filter:drop-shadow(0 4px 8px rgba(255,255,255,0.08)); }
-    .num{ font-weight:900; font-size:36px; opacity:0.95; letter-spacing:1px; }
-
-    .heart.h1 { left:8%;  bottom:8%; animation-delay:0.2s; --sx:-6vw; --rot:6deg; }
-    .heart.h2 { left:22%; bottom:6%; animation-delay:1.4s; --sx:4vw; --rot:-8deg; animation-duration:7.2s; }
-    .heart.h3 { left:40%; bottom:10%; animation-delay:0.8s; --sx:-3vw; --rot:2deg; animation-duration:6.4s; }
-    .heart.h4 { left:62%; bottom:6%; animation-delay:1.9s; --sx:5vw; --rot:-12deg; animation-duration:7.6s; }
-    .heart.h5 { left:82%; bottom:12%; animation-delay:0.5s; --sx:-2vw; --rot:8deg; animation-duration:6.8s; }
-
-    .spark.s1 { left:14%; top:20%; animation-delay:0.6s; --sx:3vw; --rot:14deg; animation-duration:9s; }
-    .spark.s2 { left:76%; top:18%; animation-delay:0.3s; --sx:-3vw; --rot:-18deg; animation-duration:8.2s; }
-
-    .num.n1 { left:18%; bottom:4%; animation-delay:0.4s; animation-duration:7s; --sx:-3vw; --rot:6deg; }
-    .num.n2 { left:48%; bottom:6%; animation-delay:1.0s; animation-duration:7.6s; --sx:2vw; --rot:-10deg; }
-    .num.n3 { left:78%; bottom:5%; animation-delay:1.6s; animation-duration:6.6s; --sx:-2vw; --rot:4deg; }
-
-    .pop { animation: popPulse 700ms ease-out forwards; }
-    @keyframes popPulse {
-      0% { transform: scale(1); opacity:1; filter:drop-shadow(0 12px 30px rgba(255,117,143,0.12)); }
-      50% { transform: scale(1.25); filter:drop-shadow(0 20px 46px rgba(255,117,143,0.18)); }
-      100% { transform: scale(1); filter:drop-shadow(0 6px 20px rgba(255,117,143,0.08)); }
-    }
-
-    /* ---------- CHAT UI ---------- */
-    .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5rem;box-sizing:border-box;z-index:5}
-    .card{width:min(980px,96%);height:min(780px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));backdrop-filter: blur(8px);border-radius:18px;padding:0;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(2,6,23,0.6);overflow:hidden;position:relative}
-    .header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.03)}
-    .title{font-weight:700;color:white;font-size:18px}
-    .controls{display:flex;gap:8px;align-items:center}
-    .chat{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-    .messages{display:flex;flex-direction:column;gap:8px}
-    .msg-row{max-width:78%;display:flex;flex-direction:column;position:relative}
-    .me{align-self:flex-end}
-    .them{align-self:flex-start}
-    .bubble{padding:10px 14px;border-radius:14px;color:white;font-weight:600;line-height:1.15;box-shadow:0 6px 18px rgba(2,6,23,0.45);word-break:break-word}
-    .bubble.me{background:linear-gradient(90deg,var(--bubble-me),#ff9f77);border-bottom-right-radius:4px}
-    .bubble.them{background:rgba(255,255,255,0.03);color:var(--muted);border-bottom-left-radius:4px}
-    .meta{font-size:11px;opacity:0.85;margin-top:6px;color:rgba(255,255,255,0.8)}
-    .composer{display:flex;gap:10px;padding:12px;border-top:1px solid rgba(255,255,255,0.03);align-items:end;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.02))}
-    .composer textarea{flex:1;min-height:56px;max-height:140px;background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;color:var(--muted);resize:none}
-    .btn{background:linear-gradient(90deg,var(--accent),#ff9f77);border:none;padding:10px 14px;border-radius:10px;color:#0b1020;font-weight:700;cursor:pointer}
-    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
-    .small{font-size:12px;opacity:0.8}
-    #pp-status{position:fixed;left:14px;bottom:14px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.45);color:#fff;font-size:12px;z-index:50}
-    .overlay{position:fixed;inset:0;background:linear-gradient(rgba(3,6,15,0.55),rgba(3,6,15,0.7));display:flex;align-items:center;justify-content:center;z-index:60}
-    .modal{width:min(520px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.65);text-align:center;color:var(--muted)}
-    @media (max-width:720px){ .card{height:95vh;width:98vw;border-radius:12px} .header{padding:10px} .chat{padding:12px} .composer{padding:10px} }
-
-    /* Preserve whitespace and allow selection */
-    .bubble { user-select: text; position: relative; }
-    .msg-pre { white-space: pre-wrap; font-family: inherit; margin: 0; color: inherit; background: transparent; font-size: inherit; line-height: 1.25; }
-
-    /* Arrow/menu button (appears on hover) */
-    .msg-menu-button {
-      position: absolute;
-      right: -6px; /* slightly outside bubble */
-      top: 6px;
-      width:34px;
-      height:34px;
-      border-radius:50%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:transparent;
-      border: none;
-      color:var(--muted);
-      cursor:pointer;
-      opacity:0;
-      transition:opacity .15s ease, transform .12s ease;
-      z-index:8;
-    }
-    .msg-row:hover .msg-menu-button { opacity:1; transform:translateY(-2px); }
-
-    /* small menu popup */
-    .msg-options {
-      position: absolute;
-      right: 44px;
-      top: 6px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-      border-radius:10px;
-      padding:6px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width:120px;
-      z-index:9;
-    }
-    .msg-option {
-      padding:8px 10px;
-      font-size:13px;
-      border-radius:8px;
-      background:transparent;
-      color:var(--muted);
-      border:none;
-      text-align:left;
-      cursor:pointer;
-    }
-    .msg-option:hover { background: rgba(255,255,255,0.04); color:white; }
-    .msg-options.hidden { display:none; }
-
-    /* adjust menu for mobile (position left) */
-    @media (max-width:520px){
-      .msg-options { right: auto; left: 8px; top: auto; bottom: 44px; }
-      .msg-menu-button { right: 8px; }
-    }
-
-    /* Delete confirmation popup specifics */
-    #deletePopup { display:none; z-index:80; backdrop-filter: blur(6px); animation: fadeIn 170ms ease; }
-    #deletePopup .modal { max-width:360px; padding:18px; }
-    #deletePopup .delete-title { color: #fff; margin: 0 0 6px 0; font-weight:700; font-size:18px; }
-    #deletePopup .delete-text { margin:0 0 14px 0; color:var(--muted); font-size:13px; }
-    @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
-
-    /* lock-scroll class to prevent background scroll while modal open */
-    .lock-scroll { overflow: hidden !important; height: 100vh; }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no" />
+  <title>Silent — Encrypted Realtime Chat</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🔒%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <!-- Animated background (rich & lively) -->
@@ -204,6 +52,11 @@
           <button id="sendBtn" class="btn">Send</button>
         </div>
       </div>
+
+      <div class="footer">
+        <p class="encryption-note">Your messages are end-to-end encrypted — even Silent can't read them.</p>
+        <p class="copyright">Spread © 2025</p>
+      </div>
     </div>
   </div>
 
@@ -211,7 +64,7 @@
   <div id="pairModal" class="overlay" style="display:none" role="dialog" aria-modal="true">
     <div class="modal">
       <h2>Welcome — create or join a pairing code</h2>
-      <p class="small">Create a unique code (example: <em>ourcode123</em>) and share it with the other person. All messages saved under that code.</p>
+      <p class="small">Create a unique code (example: <em>ourcode123</em>) and share it with the other person. All messages saved under that code and are end-to-end encrypted.</p>
       <div style="display:flex;gap:12px;justify-content:center;margin-top:12px">
         <button id="createPair" class="btn">Create</button>
         <button id="joinPair" class="ghost">Join</button>
@@ -219,19 +72,19 @@
 
       <div id="createBox" style="display:none;margin-top:14px">
         <div class="small">Enter a code (2–20 chars):</div>
-        <input id="createInput" placeholder="e.g. ourcode123" style="margin-top:8px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%" />
+        <input id="createInput" placeholder="e.g. ourcode123" style="margin-top:8px;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%;font-size:16px" />
         <div style="margin-top:12px"><button id="doCreate" class="btn">Create & Use</button></div>
       </div>
 
       <div id="joinBox" style="display:none;margin-top:12px">
         <div class="small">Enter the pairing code you were given:</div>
-        <input id="joinInput" placeholder="Enter code" style="margin-top:8px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%" />
+        <input id="joinInput" placeholder="Enter code" style="margin-top:8px;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%;font-size:16px" />
         <div style="margin-top:12px"><button id="doJoin" class="btn">Join</button></div>
       </div>
     </div>
   </div>
 
-  <!-- Delete confirmation popup (in-app) -->
+  <!-- Delete confirmation modal -->
   <div id="deletePopup" class="overlay" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
       <h3 id="deleteTitle" class="delete-title">Delete message?</h3>
@@ -243,421 +96,66 @@
     </div>
   </div>
 
+  <!-- Clear chat confirmation modal -->
+  <div id="clearChatModal" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="clearTitle">
+      <h3 id="clearTitle" class="modal-title">Clear chat history?</h3>
+      <p class="modal-text">This will permanently remove all messages for this pairing.</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="cancelClear" class="ghost">Cancel</button>
+        <button id="confirmClear" class="btn">Clear Chat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forget pairing confirmation modal -->
+  <div id="forgetModal" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="forgetTitle">
+      <h3 id="forgetTitle" class="modal-title">Forget pairing on this device?</h3>
+      <p class="modal-text">You'll need to pair again to continue chatting.</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="cancelForget" class="ghost">Cancel</button>
+        <button id="confirmForget" class="btn">Forget</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overwrite pairing confirmation modal -->
+  <div id="overwriteModal" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="overwriteTitle">
+      <h3 id="overwriteTitle" class="modal-title">Pairing code exists</h3>
+      <p class="modal-text">A pairing with that code exists. Overwrite? (not recommended)</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="cancelOverwrite" class="ghost">Cancel</button>
+        <button id="confirmOverwrite" class="btn">Overwrite</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report success modal -->
+  <div id="reportModal" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+      <h3 id="reportTitle" class="modal-title">Reported</h3>
+      <p class="modal-text">We will review this message.</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button id="closeReport" class="btn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error modal -->
+  <div id="errorModal" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="errorTitle">
+      <h3 id="errorTitle" class="modal-title">Error</h3>
+      <p id="errorText" class="modal-text"></p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button id="closeError" class="btn">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="pp-status">Status: initializing…</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
-    import { getDatabase, ref, push, set, get, onChildAdded, onChildRemoved, remove, off } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-
-    // ---------- Firebase config (update databaseURL if yours differs) ----------
-    const firebaseConfig = {
-      apiKey: "AIzaSyAbJ1VjQVqMG-AHtdV4lrWW_0uZJ-UGNUs",
-      authDomain: "silent-e1320.firebaseapp.com",
-      databaseURL: "https://silent-e1320-default-rtdb.firebaseio.com",
-      projectId: "silent-e1320",
-      storageBucket: "silent-e1320.firebasestorage.app",
-      messagingSenderId: "643377091397",
-      appId: "1:643377091397:web:198116cc05160954db242c",
-      measurementId: "G-RM0MG0SE6T"
-    };
-    // -------------------------------------------------------------------------------------
-
-    // init firebase
-    const app = initializeApp(firebaseConfig);
-    try { getAnalytics(app); } catch(e) { /* ignore analytics issues */ }
-    const db = getDatabase(app);
-
-    // DOM
-    const messagesEl = document.getElementById('messages');
-    const chatEl = document.getElementById('chat');
-    const textEl = document.getElementById('text');
-    const sendBtn = document.getElementById('sendBtn');
-    const clearBtnTop = document.getElementById('clearBtnTop');
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const pairModal = document.getElementById('pairModal');
-    const createPairBtn = document.getElementById('createPair');
-    const joinPairBtn = document.getElementById('joinPair');
-    const createBox = document.getElementById('createBox');
-    const joinBox = document.getElementById('joinBox');
-    const createInput = document.getElementById('createInput');
-    const joinInput = document.getElementById('joinInput');
-    const doCreate = document.getElementById('doCreate');
-    const doJoin = document.getElementById('doJoin');
-    const ppStatus = document.getElementById('pp-status');
-    const forgetBtn = document.getElementById('forgetBtn');
-
-    // Delete popup elements
-    const deletePopup = document.getElementById('deletePopup');
-    const cancelDeleteBtn = document.getElementById('cancelDelete');
-    const confirmDeleteBtn = document.getElementById('confirmDelete');
-    let pendingDelete = null; // { id, menuElement } when a delete is requested
-
-    const LOCAL_PAIR_KEY = 'peacepage_pair_code_chat_v1';
-    const CLIENT_ID_KEY = 'peacepage_client_id_v1';
-    let pairCode = null;
-    let messagesPath = null;
-    let attached = false;
-
-    function setStatus(s){
-      if (ppStatus) ppStatus.textContent = 'Status: ' + s;
-      console.log('[pp]', s);
-    }
-    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
-
-    function clientId(){
-      let id = localStorage.getItem(CLIENT_ID_KEY);
-      if (!id){ id = 'c_' + Math.random().toString(36).slice(2,9); localStorage.setItem(CLIENT_ID_KEY, id); }
-      return id;
-    }
-
-    function flash110(){
-      const el1 = document.querySelector('.num.n1');
-      const el2 = document.querySelector('.num.n2');
-      const el3 = document.querySelector('.num.n3');
-      [el1,el2,el3].forEach(el=>{
-        if(!el) return;
-        el.classList.add('pop');
-        setTimeout(()=>el.classList.remove('pop'), 700);
-      });
-    }
-
-    // Utility: close any open message menus
-    function closeAllMenus(){
-      document.querySelectorAll('.msg-options').forEach(m=> m.classList.add('hidden'));
-    }
-    // close when clicking outside
-    document.addEventListener('click', e=> {
-      // if click not inside a msg-options or msg-menu-button, close menus
-      if (!e.target.closest('.msg-options') && !e.target.closest('.msg-menu-button')) {
-        closeAllMenus();
-      }
-    });
-
-    // Show delete popup (in-app) for a specific message id
-    function showDeletePopup(id, menuElement){
-      pendingDelete = { id, menuElement };
-      deletePopup.style.display = 'flex';
-      // prevent background scroll while modal is open
-      document.documentElement.classList.add('lock-scroll');
-      // optionally focus confirm button
-      confirmDeleteBtn.focus();
-    }
-
-    function hideDeletePopup(){
-      pendingDelete = null;
-      deletePopup.style.display = 'none';
-      document.documentElement.classList.remove('lock-scroll');
-    }
-
-    // hook cancel/confirm actions once
-    cancelDeleteBtn.addEventListener('click', () => {
-      hideDeletePopup();
-    });
-
-    confirmDeleteBtn.addEventListener('click', async () => {
-      if (!pendingDelete || !pendingDelete.id) { hideDeletePopup(); return; }
-      const id = pendingDelete.id;
-      // close popup first for responsiveness
-      hideDeletePopup();
-      // also close the menu if provided
-      try { if (pendingDelete.menuElement) pendingDelete.menuElement.classList.add('hidden'); } catch(e){}
-      // perform deletion
-      try {
-        await remove(ref(db, `peacepage/messages/${pairCode}/${id}`));
-        setStatus('deleted');
-      } catch (err) {
-        console.error('delete msg error', err);
-        alert('Delete failed. See console.');
-      }
-    });
-
-    // Render a message with id (firebase key) and data
-    function appendMessage(id, data){
-      const isMine = data.sender === clientId();
-      const row = document.createElement('div');
-      row.className = 'msg-row ' + (isMine ? 'me' : 'them');
-      row.id = 'msg-' + id;
-      row.style.position = 'relative';
-
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble ' + (isMine ? 'me' : 'them');
-
-      // Preserve formatting using <pre> (textContent to prevent HTML rendering)
-      const pre = document.createElement('pre');
-      pre.className = 'msg-pre';
-      pre.textContent = data.text || '';
-      bubble.appendChild(pre);
-
-      // meta line
-      const meta = document.createElement('div');
-      meta.className = 'meta';
-      const time = data.t ? new Date(data.t).toLocaleString() : '';
-      meta.textContent = (isMine ? 'You' : 'Them') + ' · ' + time;
-      bubble.appendChild(meta);
-
-      // Arrow/menu button (appears on hover)
-      const menuBtn = document.createElement('button');
-      menuBtn.className = 'msg-menu-button';
-      menuBtn.setAttribute('aria-label', 'Message menu');
-      menuBtn.innerHTML = '&#x25B6;'; // small arrow symbol (▶)
-
-      // create small menu popup (hidden by default)
-      const menu = document.createElement('div');
-      menu.className = 'msg-options hidden';
-
-      // Copy option
-      const optCopy = document.createElement('button');
-      optCopy.className = 'msg-option';
-      optCopy.textContent = 'Copy';
-      optCopy.addEventListener('click', async (ev)=>{
-        ev.stopPropagation();
-        try {
-          await navigator.clipboard.writeText(data.text || '');
-          optCopy.textContent = 'Copied';
-          setTimeout(()=> optCopy.textContent = 'Copy', 1200);
-        } catch(err) {
-          console.warn('copy fail', err);
-          const range = document.createRange();
-          range.selectNodeContents(pre);
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
-        }
-        menu.classList.add('hidden');
-      });
-      menu.appendChild(optCopy);
-
-      // Delete option (only for messages sent by this client) - uses in-app modal
-      if (isMine) {
-        const optDel = document.createElement('button');
-        optDel.className = 'msg-option';
-        optDel.textContent = 'Delete';
-        optDel.style.color = '#ffb4b4';
-        optDel.addEventListener('click', (ev)=>{
-          ev.stopPropagation();
-          // hide the menu and open the in-app delete popup
-          menu.classList.add('hidden');
-          showDeletePopup(id, menu);
-        });
-        menu.appendChild(optDel);
-      }
-
-      // Report option
-      const optReport = document.createElement('button');
-      optReport.className = 'msg-option';
-      optReport.textContent = 'Report';
-      optReport.addEventListener('click', async (ev)=>{
-        ev.stopPropagation();
-        menu.classList.add('hidden');
-        // push a small report object to Realtime DB
-        try {
-          await push(ref(db, `peacepage/reports/${pairCode || 'ungrouped'}`), {
-            messageId: id,
-            text: data.text || '',
-            sender: data.sender || '',
-            reporter: clientId(),
-            t: Date.now()
-          });
-          alert('Reported — we will review this message.');
-        } catch(err){
-          console.error('report error', err);
-          alert('Report failed. See console.');
-        }
-      });
-      menu.appendChild(optReport);
-
-      // attach menu & button
-      row.appendChild(bubble);
-      row.appendChild(menuBtn);
-      row.appendChild(menu);
-
-      // show/hide menu on button click
-      menuBtn.addEventListener('click', (ev)=>{
-        ev.stopPropagation();
-        // toggle this menu; close others
-        const isHidden = menu.classList.contains('hidden');
-        closeAllMenus();
-        if (isHidden) menu.classList.remove('hidden');
-        else menu.classList.add('hidden');
-      });
-
-      messagesEl.appendChild(row);
-
-      // keep DOM bounded
-      while (messagesEl.children.length > 1000) messagesEl.removeChild(messagesEl.firstChild);
-
-      // scroll to bottom
-      chatEl.scrollTop = chatEl.scrollHeight + 200;
-
-      // pulse background numbers
-      flash110();
-    }
-
-    // attach listener for current pair
-    function attachListeners(){
-      if (!pairCode || attached) return;
-      attached = true;
-      messagesPath = `peacepage/messages/${pairCode}`;
-      const nodeRef = ref(db, messagesPath);
-      // clear DOM to avoid duplicates
-      messagesEl.innerHTML = '';
-      setStatus('listening for messages');
-
-      // on child added -> render message with its key
-      onChildAdded(nodeRef, snap => {
-        const id = snap.key;
-        const d = snap.val();
-        if (d) appendMessage(id, d);
-        setStatus('listening');
-      }, err => {
-        console.error('onChildAdded error', err);
-        setStatus('realtime error');
-      });
-
-      // on child removed -> remove DOM node
-      onChildRemoved(nodeRef, snap => {
-        const id = snap.key;
-        const el = document.getElementById('msg-' + id);
-        if (el) el.remove();
-      }, err => {
-        console.error('onChildRemoved error', err);
-      });
-    }
-
-    // detach listeners when forgetting or repairing
-    function detachListeners(){
-      if (!pairCode) return;
-      try{
-        const nodeRef = ref(db, `peacepage/messages/${pairCode}`);
-        off(nodeRef); // remove all listeners for that ref
-      }catch(e){ /* ignore */ }
-      attached = false;
-    }
-
-    // helpers to read/write pairing node
-    async function readRemotePair(){
-      try{
-        const snap = await get(ref(db, 'peacepage/pairing'));
-        if (!snap.exists()) return null;
-        return snap.val().code ?? null;
-      }catch(e){ console.warn('readRemotePair', e); return null; }
-    }
-    async function writeRemotePair(code){
-      try{
-        await set(ref(db, 'peacepage/pairing'), { code, updatedAt: Date.now() });
-        return true;
-      }catch(e){ console.error('writeRemotePair', e); return false; }
-    }
-
-    // send message
-    async function sendMessage(text){
-      if (!pairCode){ pairModal.style.display = 'flex'; setStatus('no pairing'); return; }
-      setStatus('validating pairing...');
-      const remote = await readRemotePair();
-      if (!remote){ alert('No pairing created in cloud. Create first.'); setStatus('no remote'); return; }
-      if (remote !== pairCode){ alert('Local pairing mismatch. Re-pair.'); setStatus('pair mismatch'); pairModal.style.display = 'flex'; return; }
-      const nodeRef = ref(db, `peacepage/messages/${pairCode}`);
-      try{
-        setStatus('sending...');
-        await push(nodeRef, { text, t: Date.now(), sender: clientId() });
-        setStatus('sent');
-      }catch(e){
-        console.error('send error', e);
-        setStatus('send failed');
-        alert('Failed to send.');
-      }
-    }
-
-    // clear chat (keeps native confirm for simplicity)
-    async function clearChat(){
-      if (!pairCode) return alert('No pairing set.');
-      if (!confirm('Clear chat history for this pairing?')) return;
-      try{
-        await remove(ref(db, `peacepage/messages/${pairCode}`));
-        messagesEl.innerHTML = '';
-        setStatus('cleared');
-      }catch(e){ console.error('clear error', e); alert('Failed to clear.'); }
-    }
-
-    // forget local pairing (keeps native confirm for simplicity)
-    function forgetLocal(){
-      if (!confirm('Forget pairing on this device?')) return;
-      detachListeners();
-      localStorage.removeItem(LOCAL_PAIR_KEY);
-      pairCode = null;
-      messagesEl.innerHTML = '';
-      attached = false;
-      pairModal.style.display = 'flex';
-      setStatus('forgot pairing');
-    }
-
-    // UI events
-    sendBtn.addEventListener('click', ()=>{ const t = (textEl.value || '').trim(); if (!t) return; sendMessage(t); textEl.value=''; });
-    textEl.addEventListener('keydown', e=>{ if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendBtn.click(); });
-    clearBtnTop.addEventListener('click', clearChat);
-    forgetBtn.addEventListener('click', forgetLocal);
-    fullscreenBtn.addEventListener('click', ()=>{ const el=document.documentElement; if (!document.fullscreenElement) el.requestFullscreen?.(); else document.exitFullscreen?.(); });
-
-    createPairBtn.addEventListener('click', ()=>{ createBox.style.display='block'; joinBox.style.display='none'; createInput.focus(); });
-    joinPairBtn.addEventListener('click', ()=>{ joinBox.style.display='block'; createBox.style.display='none'; joinInput.focus(); });
-
-    doCreate.addEventListener('click', async ()=>{
-      const code = (createInput.value || '').trim();
-      if (!code || code.length < 2) return alert('Enter a code (2–20 chars).');
-      setStatus('creating pairing...');
-      const ok = await writeRemotePair(code);
-      if (!ok){ alert('Create failed'); setStatus('create failed'); return; }
-      localStorage.setItem(LOCAL_PAIR_KEY, code);
-      pairCode = code;
-      pairModal.style.display = 'none';
-      setStatus('paired (creator)');
-      attachListeners();
-    });
-
-    doJoin.addEventListener('click', async ()=>{
-      const code = (joinInput.value || '').trim();
-      if (!code) return alert('Enter code to join.');
-      setStatus('checking pairing...');
-      const remote = await readRemotePair();
-      if (!remote){ alert('No pairing created. Ask other to create.'); setStatus('no remote'); return; }
-      if (code !== remote){ alert('Pairing code incorrect.'); setStatus('join failed'); return; }
-      localStorage.setItem(LOCAL_PAIR_KEY, code);
-      pairCode = code;
-      pairModal.style.display = 'none';
-      setStatus('paired (joined)');
-      attachListeners();
-    });
-
-    // init
-    (async function init(){
-      try{
-        setStatus('initializing...');
-        const local = localStorage.getItem(LOCAL_PAIR_KEY);
-        const remote = await readRemotePair();
-        if (!local){
-          pairModal.style.display = 'flex';
-          setStatus('waiting for pairing');
-        } else {
-          if (remote && remote === local){
-            pairCode = local;
-            pairModal.style.display = 'none';
-            setStatus('paired (restored)');
-            attachListeners();
-          } else if (!remote){
-            pairModal.style.display = 'flex';
-            setStatus('no remote pairing');
-          } else {
-            pairModal.style.display = 'flex';
-            setStatus('pair mismatch');
-          }
-        }
-      }catch(e){
-        console.error('init error', e);
-        setStatus('init error');
-        pairModal.style.display = 'flex';
-      }
-    })();
-  </script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
