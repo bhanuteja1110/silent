@@ -154,6 +154,26 @@
     </div>
   </div>
 
+  <!-- Share room link modal -->
+  <div id="shareModal" class="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+      <h3 id="shareTitle" class="modal-title">Share this chat link</h3>
+      <p class="modal-text">Share this link with your partner to invite them to the chat.</p>
+      <div class="share-link-container">
+        <input id="shareLinkInput" type="text" readonly class="share-link-input" />
+      </div>
+      <p class="share-warning">Anyone with this link can join this private chat.</p>
+      <div class="share-buttons">
+        <button id="copyLinkBtn" class="btn share-btn">Copy Link</button>
+        <button id="shareWhatsAppBtn" class="ghost share-btn">Share via WhatsApp</button>
+        <button id="shareTelegramBtn" class="ghost share-btn">Share via Telegram</button>
+      </div>
+      <div style="margin-top:12px">
+        <button id="closeShareBtn" class="ghost" style="width:100%">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="pp-status">Status: initializing…</div>
 
   <script type="module" src="app.js"></script>
