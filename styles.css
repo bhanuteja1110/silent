@@ -59,13 +59,13 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
 
 /* ---------- CHAT UI ---------- */
 .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5rem;box-sizing:border-box;z-index:5}
-.card{width:min(980px,96%);height:min(780px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));backdrop-filter: blur(8px);border-radius:18px;padding:0;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(2,6,23,0.6);overflow:hidden;position:relative}
+.card{width:min(980px,96%);height:min(780px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));backdrop-filter: blur(8px);border-radius:18px;padding:0;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(2,6,23,0.6);overflow:visible;position:relative}
 .header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.03)}
 .title{font-weight:700;color:white;font-size:18px}
 .controls{display:flex;gap:8px;align-items:center}
-.chat{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-.messages{display:flex;flex-direction:column;gap:8px}
-.msg-row{max-width:78%;display:flex;flex-direction:column;position:relative;animation: msgFadeIn 0.3s ease-out forwards;contain:layout style paint;will-change:transform,opacity}
+.chat{flex:1;overflow-y:auto;overflow-x:visible;-webkit-overflow-scrolling:touch;padding:18px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
+.messages{display:flex;flex-direction:column;gap:8px;overflow:visible}
+.msg-row{max-width:78%;display:flex;flex-direction:column;position:relative;animation: msgFadeIn 0.3s ease-out forwards;contain:layout style paint;will-change:transform,opacity;overflow:visible !important}
 @keyframes msgFadeIn {
   from { opacity:0; transform: translateY(8px) scale(0.98); }
   to { opacity:1; transform: translateY(0) scale(1); }
@@ -246,7 +246,7 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   transform:scale(0.9);
 }
 
-/* Arrow/menu button (appears on hover) */
+/* ---------- Menu button (ensure pointer-events & stacking) ---------- */
 .msg-menu-button {
   position: absolute;
   right: -6px;
@@ -264,19 +264,24 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   cursor:pointer;
   opacity:0;
   transition:opacity .15s ease, transform .12s ease, background .15s ease;
-  z-index:8;
+  z-index: 11000;           /* HIGH so button is on top */
+  pointer-events: auto;    /* ensure clicks reach it */
 }
-.msg-row:hover .msg-menu-button { opacity:1; transform:translateY(-2px); }
-.msg-menu-button:hover {
+/* Show on hover / when menu open */
+.msg-row:hover .msg-menu-button,
+.msg-row.show-menu .msg-menu-button {
+  opacity:1;
+  transform: translateY(-2px);
+}
+.msg-menu-button:hover,
+.msg-menu-button:active {
   background:rgba(0,0,0,0.5);
   transform:translateY(-2px) scale(1.1);
 }
 
-/* small menu popup - improved positioning */
+/* ---------- Menu popup (fixed, high z-index, visibility handling) ---------- */
 .msg-options {
-  position: absolute;
-  right: 44px;
-  top: 6px;
+  position: fixed;
   background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
   backdrop-filter: blur(8px);
   border:1px solid rgba(255,255,255,0.1);
@@ -286,17 +291,34 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   display:flex;
   flex-direction:column;
   gap:6px;
-  min-width:120px;
-  z-index:9;
-  animation: menuFadeIn 150ms ease-out;
+  min-width:140px;
+  z-index: 12000;          /* EVEN HIGHER for menu */
+  pointer-events:auto;
+  transition: transform .12s ease, opacity .12s ease, visibility .12s linear;
+  opacity: 0;
+  transform: scale(.96);
+  visibility: hidden;
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+  will-change: transform, opacity;
 }
-@keyframes menuFadeIn {
-  from { opacity:0; transform: translateX(4px) scale(0.95); }
-  to { opacity:1; transform: translateX(0) scale(1); }
+/* Visible state */
+.msg-options.show {
+  opacity: 1;
+  transform: scale(1);
+  visibility: visible;
+}
+/* Hidden state — do NOT use display:none !important */
+.msg-options.hidden {
+  opacity: 0 !important;
+  transform: scale(.96) !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 .msg-row.them .msg-options {
   right: auto;
-  left: 44px;
+  left: 8px;
+  transform-origin: top left;
 }
 .msg-option {
   padding:8px 10px;
@@ -308,6 +330,12 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   text-align:left;
   cursor:pointer;
   transition:background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  white-space:nowrap;
+  min-height:32px;
+  display:flex;
+  align-items:center;
+  position:relative;
+  z-index:10001;
 }
 .msg-option:hover { 
   background: rgba(255,255,255,0.08); 
@@ -317,24 +345,40 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
 .msg-option:active {
   transform:translateX(2px) scale(0.98);
 }
-.msg-options.hidden { display:none; }
+.msg-options.hidden { 
+  display:none !important; 
+  opacity: 0 !important;
+  transform: scale(.96) !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 
-/* adjust menu for mobile (position above) */
+/* adjust menu for mobile (position above, always visible) */
 @media (max-width:520px){
-  .msg-options { 
-    right: auto; 
-    left: 8px; 
-    top: auto; 
-    bottom: 44px; 
-  }
-  .msg-row.them .msg-options {
-    left: auto;
+  .msg-menu-button {
+    opacity: 0.7 !important; /* Always visible on mobile */
     right: 8px;
   }
-  .msg-menu-button { right: 8px; }
   .msg-row.them .msg-menu-button {
     right: auto;
     left: 8px;
+  }
+  .msg-options { 
+    right: 8px;
+    left: auto;
+    top: auto; 
+    bottom: 44px;
+    transform-origin: bottom right;
+    max-height: 200px;
+  }
+  .msg-row.them .msg-options {
+    left: 8px;
+    right: auto;
+    transform-origin: bottom left;
+  }
+  .msg-row.show-menu .msg-menu-button,
+  .msg-row:hover .msg-menu-button {
+    opacity: 1 !important;
   }
 }
 
@@ -459,9 +503,6 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
 }
 #shareWhatsAppBtn:before {
   content:'💬';
-}
-#shareTelegramBtn:before {
-  content:'✈️';
 }
 
 @media (max-width:520px) {
