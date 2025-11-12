@@ -4,7 +4,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
 import {
-  getDatabase, ref, push, set, get, onChildAdded, onChildRemoved, onValue, remove, off, update
+  getDatabase, ref, push, set, get, onChildAdded, onChildRemoved, onChildChanged, onValue, remove, off, update
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 /* --------------------- CONFIG --------------------- */
@@ -62,6 +62,12 @@ const closeReportBtn = document.getElementById('closeReport');
 const errorModal = document.getElementById('errorModal');
 const errorText = document.getElementById('errorText');
 const closeErrorBtn = document.getElementById('closeError');
+const shareModal = document.getElementById('shareModal');
+const shareLinkInput = document.getElementById('shareLinkInput');
+const copyLinkBtn = document.getElementById('copyLinkBtn');
+const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
+const shareTelegramBtn = document.getElementById('shareTelegramBtn');
+const closeShareBtn = document.getElementById('closeShareBtn');
 
 let pendingDelete = null; // { id, menuElement }
 let pendingOverwrite = null; // { code, saltBytes }
@@ -763,12 +769,62 @@ closeReportBtn.addEventListener('click', () => hideModal(reportModal));
 closeErrorBtn.addEventListener('click', () => hideModal(errorModal));
 
 // Close modals on overlay click
-[deletePopup, clearChatModal, forgetModal, overwriteModal, reportModal, errorModal].forEach(modal => {
+[deletePopup, clearChatModal, forgetModal, overwriteModal, reportModal, errorModal, shareModal].forEach(modal => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
       hideModal(modal);
     }
   });
+});
+
+/* -------------------- Share room link functionality -------------------- */
+function showShareModal(code) {
+  const shareUrl = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(code)}`;
+  shareLinkInput.value = shareUrl;
+  showModal(shareModal);
+}
+
+function copyShareLink() {
+  shareLinkInput.select();
+  shareLinkInput.setSelectionRange(0, 99999); // For mobile devices
+  try {
+    navigator.clipboard.writeText(shareLinkInput.value);
+    const originalText = copyLinkBtn.textContent;
+    copyLinkBtn.textContent = 'Copied!';
+    setTimeout(() => {
+      copyLinkBtn.textContent = originalText;
+    }, 2000);
+  } catch(err) {
+    // Fallback for older browsers
+    document.execCommand('copy');
+    const originalText = copyLinkBtn.textContent;
+    copyLinkBtn.textContent = 'Copied!';
+    setTimeout(() => {
+      copyLinkBtn.textContent = originalText;
+    }, 2000);
+  }
+}
+
+function shareViaWhatsApp() {
+  const shareUrl = shareLinkInput.value;
+  const text = encodeURIComponent(`Join me on Silent chat: ${shareUrl}`);
+  window.open(`https://wa.me/?text=${text}`, '_blank');
+}
+
+function shareViaTelegram() {
+  const shareUrl = encodeURIComponent(shareLinkInput.value);
+  window.open(`https://t.me/share/url?url=${shareUrl}`, '_blank');
+}
+
+// Share modal event handlers
+copyLinkBtn.addEventListener('click', copyShareLink);
+shareWhatsAppBtn.addEventListener('click', shareViaWhatsApp);
+shareTelegramBtn.addEventListener('click', shareViaTelegram);
+closeShareBtn.addEventListener('click', () => hideModal(shareModal));
+
+// Allow clicking on share link input to select all
+shareLinkInput.addEventListener('click', function() {
+  this.select();
 });
 
 createPairBtn.addEventListener('click', ()=>{ createBox.style.display='block'; joinBox.style.display='none'; createInput.focus(); });
@@ -802,6 +858,10 @@ doCreate.addEventListener('click', async ()=>{
   hideModal(pairModal);
   setStatus('paired (creator)');
   attachListeners();
+  // Show share modal after successful creation
+  setTimeout(() => {
+    showShareModal(code);
+  }, 300);
 });
 
 cancelOverwriteBtn.addEventListener('click', () => {
@@ -832,6 +892,10 @@ confirmOverwriteBtn.addEventListener('click', async () => {
     hideModal(pairModal);
     setStatus('paired (creator)');
     attachListeners();
+    // Show share modal after successful creation
+    setTimeout(() => {
+      showShareModal(code);
+    }, 300);
   }
 });
 
@@ -876,6 +940,47 @@ if (window.visualViewport) {
 (async function init(){
   try {
     setStatus('initializing...');
+    
+    // Check for room parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    
+    if (roomParam) {
+      // Auto-join flow: prefill join input and open join box
+      setStatus('room link detected');
+      joinInput.value = roomParam;
+      showModal(pairModal);
+      joinBox.style.display = 'block';
+      createBox.style.display = 'none';
+      // Auto-trigger join after a brief delay
+      setTimeout(async () => {
+        const code = roomParam.trim();
+        if (!code) {
+          showError('Invalid room code.');
+          return;
+        }
+        setStatus('checking pairing...');
+        const remoteInfo = await readRemotePairInfo(code);
+        if (!remoteInfo){ 
+          showError('No pairing created. Ask other to create.'); 
+          setStatus('no remote'); 
+          return; 
+        }
+        const saltBytes = base64ToBuf(remoteInfo.salt);
+        // derive key now
+        cryptoKeyCache = await deriveKeyFromCode(code, saltBytes);
+        pairSalt = saltBytes;
+        localStorage.setItem(LOCAL_PAIR_KEY, code);
+        pairCode = code;
+        hideModal(pairModal);
+        setStatus('paired (joined)');
+        attachListeners();
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }, 500);
+      return;
+    }
+    
     const local = localStorage.getItem(LOCAL_PAIR_KEY);
     if (!local) {
       showModal(pairModal);
