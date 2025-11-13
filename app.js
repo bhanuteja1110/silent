@@ -464,99 +464,81 @@ function detachReactionListener(messageId) {
 }
 
 /* -------------------- Message rendering -------------------- */
-function closeAllMenus(){ 
-  document.querySelectorAll('.msg-options').forEach(m=> {
+function closeAllMenus(){
+  document.querySelectorAll('.msg-options').forEach(m=>{
     m.classList.remove('show');
-    // schedule adding hidden after transition end
-    setTimeout(()=> {
-      if (!m.classList.contains('show')) m.classList.add('hidden');
-    }, 140);
-  }); 
-  document.querySelectorAll('.msg-row').forEach(r=> r.classList.remove('show-menu')); 
+    m.classList.add('hidden');
+    m.style.display = 'none';
+    m.style.left = '';
+    m.style.top = '';
+  });
+  document.querySelectorAll('.msg-row').forEach(r=> r.classList.remove('show-menu'));
 }
 
 function toggleMessageMenu(row, menu) {
-  const isHidden = menu.classList.contains('hidden') || !menu.classList.contains('show');
-  // close other menus first
+  // close any other open menus first
   closeAllMenus();
 
-  if (isHidden) {
-    const bubble = row.querySelector('.bubble');
-    if (!bubble) return;
-    const bubbleRect = bubble.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const menuWidth = Math.max(140, menu.offsetWidth || 140);
-    const menuHeightEstimate = Math.min(menu.scrollHeight || 200, viewportHeight - 40);
+  // prepare menu element
+  // ensure menu is part of DOM and displayed (we use visibility/opacity in CSS)
+  menu.classList.remove('hidden');
+  menu.style.display = 'flex';   // ensure layout so getBoundingClientRect works
+  menu.style.left = '0px';
+  menu.style.top = '0px';
 
-    let left, top;
-
-    if (row.classList.contains('them')) {
-      left = bubbleRect.left - menuWidth - 8;
-      if (left < 8) left = bubbleRect.right + 8;
-    } else {
-      left = bubbleRect.right + 8;
-      if (left + menuWidth > viewportWidth - 8) left = bubbleRect.left - menuWidth - 8;
-    }
-
-    top = bubbleRect.top + 8;
-    if (top + menuHeightEstimate > viewportHeight - 8) {
-      top = Math.max(8, bubbleRect.bottom - menuHeightEstimate - 8);
-    }
-
-    // Set inline fixed positioning BEFORE showing
-    Object.assign(menu.style, {
-      position: 'fixed',
-      left: `${Math.round(left)}px`,
-      top: `${Math.round(top)}px`,
-      right: 'auto',
-      bottom: 'auto',
-      zIndex: '12000',
-      maxHeight: 'calc(100vh - 20px)',
-      overflowY: 'auto',
-      visibility: 'hidden' // start hidden, we'll animate in
-    });
-
-    // Debug: verify menu items exist
-    console.log('Opening menu for', row.id, 'menu items:', Array.from(menu.querySelectorAll('.msg-option')).map(b=>b.textContent.trim()));
-
-    // Remove hidden and animate via .show
-    menu.classList.remove('hidden');
-    // force reflow so transition works
-    void menu.offsetWidth;
+  // compute bubble rect to position menu (fixed position relative to viewport)
+  const bubble = row.querySelector('.bubble');
+  if (!bubble) {
+    // fallback: toggle simple show class if no bubble found
+    menu.classList.add('show');
     row.classList.add('show-menu');
-
-    // slight delay so CSS transition triggers reliably
-    setTimeout(() => {
-      menu.classList.add('show');
-      menu.style.visibility = 'visible';
-    }, 8);
-
-  } else {
-    // hide gracefully with animation
-    menu.classList.remove('show');
-    // after transition completes, mark hidden and clean inline styles
-    setTimeout(() => {
-      if (!menu.classList.contains('show')) {
-        menu.classList.add('hidden');
-        menu.style.left = '';
-        menu.style.top = '';
-        menu.style.position = '';
-        menu.style.zIndex = '';
-      }
-    }, 160); // match CSS transition (~120ms + margin)
-    row.classList.remove('show-menu');
-  }
-}
-
-// Use pointerdown for more immediate behavior and to avoid race with menu show
-document.addEventListener('pointerdown', (e) => {
-  // if pointerdown on menu or menu button or edit box -> do nothing
-  if (e.target.closest('.msg-options') || e.target.closest('.msg-menu-button') || e.target.closest('.msg-edit-box')) {
     return;
   }
-  // otherwise close menus
-  closeAllMenus();
+  const br = bubble.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const menuRect = menu.getBoundingClientRect();
+  const menuW = Math.max(menuRect.width, 150);
+  const menuH = Math.max(menuRect.height, 120);
+
+  // decide horizontal position
+  let left;
+  if (row.classList.contains('them')) {
+    // try to place left of bubble if possible (for left-aligned messages)
+    left = br.left - menuW - 10;
+    if (left < 8) left = br.right + 10; // else place to right
+  } else {
+    // for my messages place to right
+    left = br.right + 10;
+    if (left + menuW > vw - 8) left = br.left - menuW - 10; // flip left if not enough room
+  }
+
+  // decide vertical position
+  let top = br.top;
+  if (top + menuH > vh - 12) {
+    // move above bubble if it would overflow bottom
+    top = Math.max(8, br.bottom - menuH);
+  }
+  if (top < 8) top = 8;
+
+  // set styles
+  menu.style.position = 'fixed';
+  menu.style.left = Math.round(left) + 'px';
+  menu.style.top = Math.round(top) + 'px';
+  menu.style.right = 'auto';
+  menu.style.bottom = 'auto';
+
+  // show it
+  requestAnimationFrame(() => {
+    menu.classList.add('show');
+    row.classList.add('show-menu');
+  });
+}
+
+document.addEventListener('click', e=>{
+  if (!e.target.closest('.msg-options') && !e.target.closest('.msg-menu-button') && !e.target.closest('.msg-edit-box')) {
+    closeAllMenus();
+  }
 });
 
 function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false){
@@ -609,8 +591,7 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
       sel.removeAllRanges();
       sel.addRange(range);
     }
-    menu.classList.add('hidden');
-    menu.classList.remove('show');
+    closeAllMenus();
   });
   menu.appendChild(optCopy);
 
@@ -620,8 +601,7 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
     optEdit.textContent = 'Edit';
     optEdit.addEventListener('click', (ev)=>{
       ev.stopPropagation();
-      menu.classList.add('hidden');
-      menu.classList.remove('show');
+      closeAllMenus();
       const existingEdit = bubble.querySelector('.msg-edit-box');
       if (existingEdit) {
         existingEdit.remove();
@@ -638,8 +618,7 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
     optDel.style.color = '#ffb4b4';
     optDel.addEventListener('click', (ev)=>{
       ev.stopPropagation();
-      menu.classList.add('hidden');
-      menu.classList.remove('show');
+      closeAllMenus();
       showDeletePopup(id, menu);
     });
     menu.appendChild(optDel);
@@ -650,8 +629,7 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
   optReport.textContent = 'Report';
   optReport.addEventListener('click', async (ev)=>{
     ev.stopPropagation();
-    menu.classList.add('hidden');
-    menu.classList.remove('show');
+    closeAllMenus();
     try {
       await push(ref(db, `peacepage/reports/${pairCode || 'ungrouped'}`), {
         messageId: id,
@@ -672,16 +650,16 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
   row.appendChild(menuBtn);
   row.appendChild(menu);
 
-  // Use pointerdown (works better on mobile/desktop) and ensure events don't bubble
+  // Use click handler with stopPropagation to prevent document click from closing menu
   menuBtn.setAttribute('tabindex','0'); // accessible
-  menuBtn.addEventListener('pointerdown', (ev) => {
-    ev.preventDefault();
+  menuBtn.addEventListener('click', (ev)=>{
     ev.stopPropagation();
-    // defensive: ensure the button is on top
-    menuBtn.style.zIndex = '11001';
-    menu.style.zIndex = '12001';
-    // toggle
-    toggleMessageMenu(row, menu);
+    // toggle logic: if menu currently shown -> close; else open
+    if (menu.classList.contains('show')) {
+      closeAllMenus();
+    } else {
+      toggleMessageMenu(row, menu);
+    }
   });
 
   // Long press support for mobile
@@ -828,6 +806,9 @@ function attachListeners(){
   }, err => {
     console.error('onChildChanged error', err);
   });
+
+  // Attach typing indicator listener
+  attachPartnerTypingListener();
 }
 
 function detachListeners(){
@@ -838,6 +819,11 @@ function detachListeners(){
     // Detach all reaction listeners
     reactionListeners.forEach((unsubscribe) => unsubscribe());
     reactionListeners.clear();
+    // Detach typing listener
+    if (partnerTypingUnsub) {
+      partnerTypingUnsub();
+      partnerTypingUnsub = null;
+    }
   }catch(e){ /* ignore */ }
   attached = false;
 }
@@ -866,6 +852,8 @@ async function sendMessage(plain){
     setStatus('sending...');
     await push(ref(db, `peacepage/messages/${pairCode}`), { c, iv, t: Date.now(), sender: clientId() });
     setStatus('sent');
+    // Clear typing indicator when message is sent
+    setLocalTyping(false);
   } catch(e){
     console.error('send error', e);
     setStatus('send failed');
@@ -919,6 +907,63 @@ function doForgetLocal() {
   setStatus('forgot pairing');
 }
 
+/* -------------------- Typing indicator implementation -------------------- */
+const TYPING_PATH = (code, client) => `peacepage/typing/${code}/${client}`;
+
+let typingTimeout = null;
+let lastTypingState = false;
+
+// call this when user input changes
+function setLocalTyping(isTyping) {
+  if (!pairCode) return;
+  const myId = clientId();
+  const path = TYPING_PATH(pairCode, myId);
+  try {
+    // write a simple presence object
+    set(ref(db, path), { t: Date.now(), typing: !!isTyping }).catch(()=>{});
+  } catch(e){ /* ignore */ }
+  lastTypingState = !!isTyping;
+}
+
+// listener to show partner typing
+let partnerTypingUnsub = null;
+function attachPartnerTypingListener() {
+  if (!pairCode) return;
+
+  // unsubscribe existing
+  if (partnerTypingUnsub) partnerTypingUnsub();
+
+  const partnerRef = ref(db, `peacepage/typing/${pairCode}`);
+  partnerTypingUnsub = onValue(partnerRef, snap => {
+    const all = snap.val() || {};
+    const my = clientId();
+
+    // find any other client with typing:true and recent timestamp (<6s)
+    let someoneTyping = false;
+    const now = Date.now();
+    for (const k in all) {
+      if (k === my) continue;
+      const v = all[k];
+      if (v && v.typing && (now - (v.t || 0) < 6000)) { someoneTyping = true; break; }
+    }
+
+    showTypingUI(someoneTyping);
+  }, (err) => { console.warn('typing listener err', err); });
+}
+
+// show / hide typing UI (implement DOM update)
+function showTypingUI(on) {
+  let el = document.querySelector('.typing-indicator');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'typing-indicator';
+    el.innerHTML = `<div class="dots"><span>.</span><span>.</span><span>.</span></div><div class="text">Partner is typing…</div>`;
+    const composer = document.querySelector('.composer');
+    composer.appendChild(el);
+  }
+  el.style.display = on ? 'flex' : 'none';
+}
+
 /* -------------------- UI events wiring -------------------- */
 sendBtn.addEventListener('click', ()=>{ 
   const t = (textEl.value || '').trim(); 
@@ -935,10 +980,22 @@ textEl.addEventListener('keydown', e=>{
   }
 });
 
-// Auto-resize textarea
+// Auto-resize textarea and handle typing indicator
+let typingDebounce = null;
 textEl.addEventListener('input', () => {
   textEl.style.height = 'auto';
   textEl.style.height = Math.min(textEl.scrollHeight, 140) + 'px';
+
+  // Typing indicator logic
+  const val = (textEl.value || '').trim();
+  const isTyping = val.length > 0;
+  setLocalTyping(isTyping);
+
+  // debounce clearing (if user stops typing)
+  if (typingDebounce) clearTimeout(typingDebounce);
+  typingDebounce = setTimeout(() => {
+    setLocalTyping(false);
+  }, 2000);
 });
 
 clearBtnTop?.addEventListener('click', clearChat);
