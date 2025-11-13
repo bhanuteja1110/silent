@@ -246,7 +246,7 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   transform:scale(0.9);
 }
 
-/* ---------- Menu button (ensure pointer-events & stacking) ---------- */
+/* ---------- message menu & button (fixed) ---------- */
 .msg-menu-button {
   position: absolute;
   right: -6px;
@@ -263,124 +263,74 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   color:var(--muted);
   cursor:pointer;
   opacity:0;
-  transition:opacity .15s ease, transform .12s ease, background .15s ease;
-  z-index: 11000;           /* HIGH so button is on top */
-  pointer-events: auto;    /* ensure clicks reach it */
+  transition:opacity .12s ease, transform .12s ease, background .12s ease;
+  z-index: 100001;        /* ensure above bubbles */
+  pointer-events: auto;
 }
-/* Show on hover / when menu open */
+
+/* Desktop: only show menu button on hover */
 .msg-row:hover .msg-menu-button,
-.msg-row.show-menu .msg-menu-button {
+.msg-row.show-menu .msg-menu-button { 
   opacity:1;
   transform: translateY(-2px);
 }
-.msg-menu-button:hover,
-.msg-menu-button:active {
-  background:rgba(0,0,0,0.5);
-  transform:translateY(-2px) scale(1.1);
+
+/* Mobile: always visible (easier to tap) */
+@media (max-width:520px) {
+  .msg-menu-button { opacity:0.85 !important; right:8px; }
+  .msg-row.them .msg-menu-button { right:auto; left:8px; }
 }
 
-/* ---------- Menu popup (fixed, high z-index, visibility handling) ---------- */
+/* Menu popup (positioned in JS, but styled here) */
 .msg-options {
   position: fixed;
-  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
-  backdrop-filter: blur(8px);
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:12px;
-  padding:6px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  min-width:150px;
+  max-width: 320px;
   display:flex;
   flex-direction:column;
   gap:6px;
-  min-width:140px;
-  z-index: 12000;          /* EVEN HIGHER for menu */
+  padding:8px;
+  background: rgba(18,18,24,0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.6);
   pointer-events:auto;
-  transition: transform .12s ease, opacity .12s ease, visibility .12s linear;
+  transform-origin: top right;
   opacity: 0;
-  transform: scale(.96);
   visibility: hidden;
-  max-height: calc(100vh - 20px);
-  overflow-y: auto;
-  will-change: transform, opacity;
-}
-/* Visible state */
-.msg-options.show {
-  opacity: 1;
-  transform: scale(1);
-  visibility: visible;
-}
-/* Hidden state — do NOT use display:none !important */
-.msg-options.hidden {
-  opacity: 0 !important;
-  transform: scale(.96) !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-.msg-row.them .msg-options {
-  right: auto;
-  left: 8px;
-  transform-origin: top left;
-}
-.msg-option {
-  padding:8px 10px;
-  font-size:13px;
-  border-radius:8px;
-  background:transparent;
-  color:var(--muted);
-  border:none;
-  text-align:left;
-  cursor:pointer;
-  transition:background 0.15s ease, color 0.15s ease, transform 0.1s ease;
-  white-space:nowrap;
-  min-height:32px;
-  display:flex;
-  align-items:center;
-  position:relative;
-  z-index:10001;
-}
-.msg-option:hover { 
-  background: rgba(255,255,255,0.08); 
-  color:white; 
-  transform:translateX(2px);
-}
-.msg-option:active {
-  transform:translateX(2px) scale(0.98);
-}
-.msg-options.hidden { 
-  display:none !important; 
-  opacity: 0 !important;
-  transform: scale(.96) !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+  transform: scale(.96);
+  transition: opacity .14s ease, transform .14s ease, visibility .14s ease;
+  z-index: 100000; /* very high to float above everything */
+  overflow: auto;
+  max-height: calc(100vh - 40px);
 }
 
-/* adjust menu for mobile (position above, always visible) */
-@media (max-width:520px){
-  .msg-menu-button {
-    opacity: 0.7 !important; /* Always visible on mobile */
-    right: 8px;
-  }
-  .msg-row.them .msg-menu-button {
-    right: auto;
-    left: 8px;
-  }
-  .msg-options { 
-    right: 8px;
-    left: auto;
-    top: auto; 
-    bottom: 44px;
-    transform-origin: bottom right;
-    max-height: 200px;
-  }
-  .msg-row.them .msg-options {
-    left: 8px;
-    right: auto;
-    transform-origin: bottom left;
-  }
-  .msg-row.show-menu .msg-menu-button,
-  .msg-row:hover .msg-menu-button {
-    opacity: 1 !important;
-  }
+/* when menu is visible */
+.msg-options.show {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
 }
+
+/* keep `hidden` only as state, don't use display:none !important anywhere */
+.msg-options.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(.96);
+}
+
+.msg-option {
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.msg-option:hover { background: rgba(255,255,255,0.04); color: white; transform: translateX(3px); }
 
 /* Delete confirmation popup specifics */
 #deletePopup { display:none; z-index:80; }
@@ -523,3 +473,17 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
     font-size:15px;
   }
 }
+
+/* Typing indicator */
+.typing-indicator {
+  display:none;
+  align-items:center;
+  gap:10px;
+  margin-top:8px;
+  color:var(--muted);
+  font-size:13px;
+}
+.typing-indicator .dots span { animation: blink 1s infinite; padding: 0 2px; opacity:0.3; }
+.typing-indicator .dots span:nth-child(2) { animation-delay: .15s; }
+.typing-indicator .dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%{opacity:0.3} 50%{opacity:1} 100%{opacity:0.3} }
