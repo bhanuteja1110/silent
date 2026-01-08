@@ -8,7 +8,8 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Animated background (rich & lively) -->
+
+  <!-- Animated background -->
   <div class="float-wrap" aria-hidden="true">
     <div class="float h1"></div>
     <div class="float h2"></div>
@@ -33,187 +34,52 @@
 
   <div class="stage">
     <div class="card" role="main" aria-live="polite">
+
+      <!-- Header -->
       <div class="header">
         <div class="title">Silent</div>
         <div class="controls">
-          <button id="encryptionBtn" title="Encryption Info" class="ghost">Encryption</button>
-          <button id="forgetBtn" title="Forget pairing / re-pair" class="ghost">Settings</button>
+          <button id="encryptionBtn" class="ghost">Encryption</button>
+          <button id="forgetBtn" class="ghost">Settings</button>
           <button id="clearBtnTop" class="ghost">Clear Chat</button>
           <button id="fullscreenBtn" class="btn">Full Screen</button>
         </div>
       </div>
 
+      <!-- Chat -->
       <div class="chat" id="chat">
-        <div class="messages" id="messages" aria-live="polite"></div>
+        <div class="messages" id="messages"></div>
       </div>
 
+      <!-- Composer -->
       <div class="composer">
         <textarea id="text" placeholder="Type a message — Ctrl/Cmd+Enter to send"></textarea>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <button id="sendBtn" class="btn">Send</button>
-        </div>
+        <button id="sendBtn" class="btn">Send</button>
       </div>
 
+      <!-- ✅ FOOTER (UPDATED) -->
       <div class="footer">
-        <p class="encryption-note">Your messages are end-to-end encrypted — even Silent can't read them.</p>
-        <p class="copyright">Spread © 2025</p>
+        <p class="encryption-note">
+          Your messages are end-to-end encrypted — even Silent can't read them.
+        </p>
+
+        <p class="copyright">
+          Spread © 2025 ·
+          <a
+            href="/privacy-policy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            style="color:#8ab4f8;text-decoration:none;"
+          >
+            Privacy Policy
+          </a>
+        </p>
       </div>
+
     </div>
   </div>
 
-  <!-- pairing modal -->
-  <div id="pairModal" class="overlay" style="display:none" role="dialog" aria-modal="true">
-    <div class="modal">
-      <h2>Welcome — create or join a pairing code</h2>
-      <p class="small">Create a unique code (example: <em>ourcode123</em>) and share it with the other person. All messages saved under that code and are end-to-end encrypted.</p>
-      <div style="display:flex;gap:12px;justify-content:center;margin-top:12px">
-        <button id="createPair" class="btn">Create</button>
-        <button id="joinPair" class="ghost">Join</button>
-      </div>
-
-      <div id="createBox" style="display:none;margin-top:14px">
-        <div class="small">Enter a code (2–20 chars):</div>
-        <input id="createInput" placeholder="e.g. ourcode123" style="margin-top:8px;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%;font-size:16px" />
-        <div style="margin-top:12px"><button id="doCreate" class="btn">Create & Use</button></div>
-      </div>
-
-      <div id="joinBox" style="display:none;margin-top:12px">
-        <div class="small">Enter the pairing code you were given:</div>
-        <input id="joinInput" placeholder="Enter code" style="margin-top:8px;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);width:100%;font-size:16px" />
-        <div style="margin-top:12px"><button id="doJoin" class="btn">Join</button></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Delete confirmation modal -->
-  <div id="deletePopup" class="overlay" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
-      <h3 id="deleteTitle" class="delete-title">Delete message?</h3>
-      <p class="delete-text">This will permanently remove the message for both of you.</p>
-      <div style="display:flex;gap:10px;justify-content:center">
-        <button id="cancelDelete" class="ghost">Cancel</button>
-        <button id="confirmDelete" class="btn" style="background:linear-gradient(90deg,#ff758f,#ff9f77)">Delete</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Clear chat confirmation modal -->
-  <div id="clearChatModal" class="overlay" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="clearTitle">
-      <h3 id="clearTitle" class="modal-title">Clear chat history?</h3>
-      <p class="modal-text">This will permanently remove all messages for this pairing.</p>
-      <div style="display:flex;gap:10px;justify-content:center">
-        <button id="cancelClear" class="ghost">Cancel</button>
-        <button id="confirmClear" class="btn">Clear Chat</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Forget pairing confirmation modal -->
-  <div id="forgetModal" class="overlay" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="forgetTitle">
-      <h3 id="forgetTitle" class="modal-title">Forget pairing on this device?</h3>
-      <p class="modal-text">You'll need to pair again to continue chatting.</p>
-      <div style="display:flex;gap:10px;justify-content:center">
-        <button id="cancelForget" class="ghost">Cancel</button>
-        <button id="confirmForget" class="btn">Forget</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Overwrite pairing confirmation modal -->
-  <div id="overwriteModal" class="overlay" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="overwriteTitle">
-      <h3 id="overwriteTitle" class="modal-title">Pairing code exists</h3>
-      <p class="modal-text">A pairing with that code exists. Overwrite? (not recommended)</p>
-      <div style="display:flex;gap:10px;justify-content:center">
-        <button id="cancelOverwrite" class="ghost">Cancel</button>
-        <button id="confirmOverwrite" class="btn">Overwrite</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Report success modal -->
-  <div id="reportModal" class="overlay" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
-      <h3 id="reportTitle" class="modal-title">Reported</h3>
-      <p class="modal-text">We will review this message.</p>
-      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
-        <button id="closeReport" class="btn">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Error modal -->
-  <div id="errorModal" class="overlay" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="errorTitle">
-      <h3 id="errorTitle" class="modal-title">Error</h3>
-      <p id="errorText" class="modal-text"></p>
-      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
-        <button id="closeError" class="btn">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Share room link modal -->
-  <div id="shareModal" class="overlay" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
-      <h3 id="shareTitle" class="modal-title">Share this chat link</h3>
-      <p class="modal-text">Share this link with your partner to invite them to the chat.</p>
-      <div class="share-link-container">
-        <input id="shareLinkInput" type="text" readonly class="share-link-input" />
-      </div>
-      <p class="share-warning">Anyone with this link can join this private chat.</p>
-      <div class="share-buttons">
-        <button id="copyLinkBtn" class="btn share-btn">Copy Link</button>
-        <button id="shareWhatsAppBtn" class="ghost share-btn">Share via WhatsApp</button>
-      </div>
-      <div style="margin-top:12px">
-        <button id="closeShareBtn" class="ghost" style="width:100%">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Encryption Info modal -->
-  <div id="encryptionModal" class="overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="encryptionTitle">
-    <div class="modal">
-      <h3 id="encryptionTitle" class="modal-title">Encryption Info</h3>
-      <div class="modal-text" style="text-align:left;">
-        <p><strong>Your messages are end-to-end encrypted — even Silent can't read them.</strong></p>
-        <dl style="margin:8px 0 12px 0;">
-          <dt><strong>Algorithm</strong></dt>
-          <dd id="enc_algo">AES-GCM (256)</dd>
-
-          <dt><strong>Key derivation</strong></dt>
-          <dd id="enc_kdf">PBKDF2 (SHA-256, 150,000 iterations)</dd>
-
-          <dt><strong>Salt (cloud)</strong></dt>
-          <dd id="enc_salt">Not available</dd>
-
-          <dt><strong>Local key fingerprint</strong></dt>
-          <dd id="enc_fingerprint">Not derived</dd>
-        </dl>
-
-        <p style="margin-top:6px"><strong>What Firebase stores</strong></p>
-        <pre style="font-size:13px;border-radius:8px;padding:8px;background:rgba(255,255,255,0.03);margin:6px 0;overflow:auto;">
-{
-  "c": "&lt;base64-ciphertext&gt;",
-  "iv": "&lt;base64-iv&gt;",
-  "t": 1670000000000,
-  "sender": "c_xxxxxx"
-}
-        </pre>
-
-        <p style="margin-top:8px;font-size:12px;opacity:0.85">Keys and decryption happen only on your device. The fingerprint is local-only and cannot be used to decrypt messages unless the pairing code is known.</p>
-      </div>
-
-      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
-        <button id="copyFingerprintBtn" class="btn">Copy fingerprint</button>
-        <button id="closeEncryptionBtn" class="ghost">Close</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- Status -->
   <div id="pp-status">Status: initializing…</div>
 
   <script type="module" src="app.js"></script>
