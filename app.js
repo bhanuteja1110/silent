@@ -1,5 +1,6 @@
 // app.js
 // Module-based client. Uses Firebase Realtime Database + WebCrypto E2EE (PBKDF2 -> AES-GCM).
+// Version: 2.0 - Menu features removed for mobile optimization
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
