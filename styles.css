@@ -112,231 +112,9 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
 }
 
 /* Preserve whitespace and allow selection */
-.bubble { user-select: text; position: relative; }
+.bubble { user-select: text; position: relative; touch-action: manipulation; }
 .msg-pre { white-space: pre-wrap; font-family: inherit; margin: 0; color: inherit; background: transparent; font-size: inherit; line-height: 1.25; }
 
-/* Message editing */
-.msg-edit-box {
-  margin-top:8px;
-  padding:8px;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:12px;
-  display:flex;
-  gap:8px;
-  align-items:flex-end;
-}
-.msg-edit-input {
-  flex:1;
-  background:transparent;
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:8px;
-  padding:8px;
-  color:var(--muted);
-  font-size:14px;
-  font-family:inherit;
-  resize:none;
-  min-height:40px;
-  max-height:120px;
-}
-.msg-edit-input:focus {
-  outline:none;
-  border-color:rgba(255,117,143,0.4);
-}
-.msg-edit-actions {
-  display:flex;
-  gap:6px;
-}
-.msg-edit-btn {
-  padding:6px 10px;
-  border-radius:8px;
-  border:none;
-  cursor:pointer;
-  font-size:12px;
-  font-weight:600;
-  transition:transform 0.1s ease, opacity 0.1s ease;
-}
-.msg-edit-btn:hover {
-  transform:scale(1.05);
-}
-.msg-edit-btn:active {
-  transform:scale(0.95);
-}
-.msg-edit-save {
-  background:linear-gradient(90deg,var(--accent),#ff9f77);
-  color:#0b1020;
-}
-.msg-edit-cancel {
-  background:transparent;
-  border:1px solid rgba(255,255,255,0.1);
-  color:var(--muted);
-}
-
-/* Reactions */
-.msg-reactions {
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  margin-top:6px;
-  padding-top:6px;
-  border-top:1px solid rgba(255,255,255,0.05);
-}
-.reaction-btn {
-  display:flex;
-  align-items:center;
-  gap:4px;
-  padding:4px 8px;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:12px;
-  cursor:pointer;
-  font-size:13px;
-  transition:transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-  color:var(--muted);
-}
-.reaction-btn:hover {
-  background:rgba(255,255,255,0.08);
-  border-color:rgba(255,255,255,0.15);
-  transform:scale(1.05);
-}
-.reaction-btn:active {
-  transform:scale(0.95);
-}
-.reaction-btn.active {
-  background:rgba(255,117,143,0.15);
-  border-color:rgba(255,117,143,0.3);
-  color:#ff758f;
-}
-.reaction-emoji {
-  font-size:14px;
-}
-.reaction-count {
-  font-size:11px;
-  font-weight:600;
-  min-width:16px;
-  text-align:center;
-}
-.reaction-picker {
-  display:flex;
-  gap:4px;
-  padding:4px;
-  background:rgba(255,255,255,0.05);
-  border-radius:12px;
-  margin-top:4px;
-}
-.reaction-picker-btn {
-  width:32px;
-  height:32px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:transparent;
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:8px;
-  cursor:pointer;
-  font-size:16px;
-  transition:transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-}
-.reaction-picker-btn:hover {
-  background:rgba(255,255,255,0.08);
-  border-color:rgba(255,255,255,0.15);
-  transform:scale(1.1);
-}
-.reaction-picker-btn:active {
-  transform:scale(0.9);
-}
-
-/* ---------- message menu & button (fixed) ---------- */
-.msg-menu-button {
-  position: absolute;
-  right: -6px;
-  top: 6px;
-  width:34px;
-  height:34px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,0,0.3);
-  backdrop-filter:blur(4px);
-  border:1px solid rgba(255,255,255,0.1);
-  color:var(--muted);
-  cursor:pointer;
-  opacity:0;
-  transition:opacity .12s ease, transform .12s ease, background .12s ease;
-  z-index: 100001;        /* ensure above bubbles */
-  pointer-events: auto;
-}
-
-/* Desktop: only show menu button on hover */
-.msg-row:hover .msg-menu-button,
-.msg-row.show-menu .msg-menu-button { 
-  opacity:1;
-  transform: translateY(-2px);
-}
-
-/* Mobile: always visible (easier to tap) */
-@media (max-width:520px) {
-  .msg-menu-button { opacity:0.85 !important; right:8px; }
-  .msg-row.them .msg-menu-button { right:auto; left:8px; }
-}
-
-/* Menu popup (positioned in JS, but styled here) */
-.msg-options {
-  position: fixed;
-  min-width:150px;
-  max-width: 320px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  padding:8px;
-  background: rgba(18,18,24,0.9);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius:12px;
-  box-shadow: 0 12px 36px rgba(0,0,0,0.6);
-  pointer-events:auto;
-  transform-origin: top right;
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(.96);
-  transition: opacity .14s ease, transform .14s ease, visibility .14s ease;
-  z-index: 100000; /* very high to float above everything */
-  overflow: auto;
-  max-height: calc(100vh - 40px);
-}
-
-/* when menu is visible */
-.msg-options.show {
-  opacity: 1;
-  visibility: visible;
-  transform: scale(1);
-}
-
-/* keep `hidden` only as state, don't use display:none !important anywhere */
-.msg-options.hidden {
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(.96);
-}
-
-.msg-option {
-  padding: 8px 10px;
-  background: transparent;
-  color: var(--muted);
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  border-radius: 8px;
-  white-space: nowrap;
-}
-.msg-option:hover { background: rgba(255,255,255,0.04); color: white; transform: translateX(3px); }
-
-/* Delete confirmation popup specifics */
-#deletePopup { display:none; z-index:80; }
-#deletePopup .modal { max-width:360px; padding:18px; }
-#deletePopup .delete-title { color: #fff; margin: 0 0 6px 0; font-weight:700; font-size:18px; }
-#deletePopup .delete-text { margin:0 0 14px 0; color:var(--muted); font-size:13px; }
 
 /* encryption modal specifics */
 #encryptionModal .modal-text pre { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; max-height:220px; overflow:auto; }
@@ -390,15 +168,6 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
   100% { opacity:1; transform: translateY(0) scale(1); }
 }
 
-/* Reaction animation */
-.reaction-btn.just-added {
-  animation: reactionPop 0.3s ease-out forwards;
-}
-@keyframes reactionPop {
-  0% { transform: scale(0); opacity:0; }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity:1; }
-}
 
 /* Share modal styles */
 #shareModal .modal { max-width:480px; padding:20px; }
@@ -487,3 +256,12 @@ body{background:radial-gradient(ellipse at 10% 10%, rgba(255,117,143,0.08), tran
 .typing-indicator .dots span:nth-child(2) { animation-delay: .15s; }
 .typing-indicator .dots span:nth-child(3) { animation-delay: .3s; }
 @keyframes blink { 0%{opacity:0.3} 50%{opacity:1} 100%{opacity:0.3} }
+
+/* Mobile optimization */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chat {
+  overscroll-behavior: contain;
+}
