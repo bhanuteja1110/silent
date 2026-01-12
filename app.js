@@ -4,7 +4,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
 import {
-  getDatabase, ref, push, set, get, onChildAdded, onChildRemoved, onChildChanged, onValue, remove, off, update
+  getDatabase, ref, push, set, get, onChildAdded, onChildRemoved, onValue, remove, off
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 /* --------------------- CONFIG --------------------- */
@@ -31,7 +31,6 @@ const chatEl = document.getElementById('chat');
 const textEl = document.getElementById('text');
 const sendBtn = document.getElementById('sendBtn');
 const clearBtnTop = document.getElementById('clearBtnTop');
-const fullscreenBtn = document.getElementById('fullscreenBtn');
 const pairModal = document.getElementById('pairModal');
 const createPairBtn = document.getElementById('createPair');
 const joinPairBtn = document.getElementById('joinPair');
@@ -45,9 +44,6 @@ const ppStatus = document.getElementById('pp-status');
 const forgetBtn = document.getElementById('forgetBtn');
 
 // Modal elements
-const deletePopup = document.getElementById('deletePopup');
-const cancelDeleteBtn = document.getElementById('cancelDelete');
-const confirmDeleteBtn = document.getElementById('confirmDelete');
 const clearChatModal = document.getElementById('clearChatModal');
 const cancelClearBtn = document.getElementById('cancelClear');
 const confirmClearBtn = document.getElementById('confirmClear');
@@ -57,8 +53,6 @@ const confirmForgetBtn = document.getElementById('confirmForget');
 const overwriteModal = document.getElementById('overwriteModal');
 const cancelOverwriteBtn = document.getElementById('cancelOverwrite');
 const confirmOverwriteBtn = document.getElementById('confirmOverwrite');
-const reportModal = document.getElementById('reportModal');
-const closeReportBtn = document.getElementById('closeReport');
 const errorModal = document.getElementById('errorModal');
 const errorText = document.getElementById('errorText');
 const closeErrorBtn = document.getElementById('closeError');
@@ -74,7 +68,6 @@ const encFingerprintEl = document.getElementById('enc_fingerprint');
 const copyFingerprintBtn = document.getElementById('copyFingerprintBtn');
 const closeEncryptionBtn = document.getElementById('closeEncryptionBtn');
 
-let pendingDelete = null; // { id, menuElement }
 let pendingOverwrite = null; // { code, saltBytes }
 
 /* -------------------- Local keys/state -------------------- */
@@ -85,7 +78,6 @@ let messagesPath = null;
 let attached = false;
 let cryptoKeyCache = null; // CryptoKey for AES-GCM
 let pairSalt = null; // Uint8Array salt used for PBKDF2
-let reactionListeners = new Map(); // messageId -> unsubscribe function
 
 /* -------------------- Modal helpers -------------------- */
 function showModal(modalEl) {
@@ -186,366 +178,12 @@ async function writeRemotePairInfo(code){
   } catch(e){ console.error('writeRemotePairInfo', e); return null; }
 }
 
-/* -------------------- UI: delete popup -------------------- */
-function showDeletePopup(id, menuElement){
-  pendingDelete = { id, menuElement };
-  showModal(deletePopup);
-  confirmDeleteBtn.focus();
-}
-function hideDeletePopup(){
-  pendingDelete = null;
-  hideModal(deletePopup);
-}
-cancelDeleteBtn.addEventListener('click', hideDeletePopup);
-confirmDeleteBtn.addEventListener('click', async ()=>{
-  if (!pendingDelete || !pendingDelete.id) { hideDeletePopup(); return; }
-  const id = pendingDelete.id;
-  hideDeletePopup();
-  try {
-    await remove(ref(db, `peacepage/messages/${pairCode}/${id}`));
-    // Also remove reactions
-    try {
-      await remove(ref(db, `peacepage/reactions/${pairCode}/${id}`));
-    } catch(e) { /* ignore */ }
-    setStatus('deleted');
-  } catch (err) {
-    console.error('delete msg error', err);
-    showError('Delete failed. Please try again.');
-  }
-});
-
-/* -------------------- Message editing -------------------- */
-async function saveMessageEdit(messageId, newText) {
-  if (!pairCode || !cryptoKeyCache) {
-    showError('Cannot edit: pairing not ready.');
-    return false;
-  }
-  try {
-    setStatus('encrypting edit...');
-    const { c, iv } = await encryptWithKey(cryptoKeyCache, newText);
-    await update(ref(db, `peacepage/messages/${pairCode}/${messageId}`), {
-      c, iv, edited: true, editedAt: Date.now()
-    });
-    setStatus('edit saved');
-    
-    // Immediately update the DOM for instant feedback
-    const rowEl = document.getElementById('msg-' + messageId);
-    if (rowEl) {
-      const preEl = rowEl.querySelector('.msg-pre');
-      const metaEl = rowEl.querySelector('.meta');
-      if (preEl) {
-        preEl.textContent = newText;
-      }
-      if (metaEl) {
-        // Update meta to show edited label - get original timestamp from data attribute or parse
-        const metaText = metaEl.textContent || metaEl.innerText || '';
-        const parts = metaText.split(' · ');
-        const sender = parts[0] || (rowEl.classList.contains('me') ? 'You' : 'Them');
-        // Extract time string, removing any existing (edited) label
-        let timeStr = parts[1] ? parts[1].replace(/\(edited\)/g, '').trim() : '';
-        if (!timeStr && parts.length > 1) {
-          timeStr = parts.slice(1).join(' · ').replace(/\(edited\)/g, '').trim();
-        }
-        // If no time found, try to get from original timestamp
-        if (!timeStr) {
-          const originalTime = rowEl.getAttribute('data-timestamp');
-          if (originalTime) {
-            timeStr = new Date(parseInt(originalTime)).toLocaleString();
-          }
-        }
-        metaEl.innerHTML = sender + ' · ' + timeStr + ' <span class="edited-label">(edited)</span>';
-      }
-    }
-    
-    return true;
-  } catch(e) {
-    console.error('edit error', e);
-    showError('Failed to save edit. Please try again.');
-    return false;
-  }
-}
-
-function createEditBox(messageId, currentText, bubbleEl) {
-  const editBox = document.createElement('div');
-  editBox.className = 'msg-edit-box';
-  
-  const editInput = document.createElement('textarea');
-  editInput.className = 'msg-edit-input';
-  editInput.value = currentText;
-  editInput.rows = 1;
-  editInput.style.fontSize = '16px';
-  
-  // Auto-resize
-  editInput.addEventListener('input', () => {
-    editInput.style.height = 'auto';
-    editInput.style.height = Math.min(editInput.scrollHeight, 120) + 'px';
-  });
-  editInput.style.height = Math.min(editInput.scrollHeight, 120) + 'px';
-  
-  const actions = document.createElement('div');
-  actions.className = 'msg-edit-actions';
-  
-  const saveBtn = document.createElement('button');
-  saveBtn.className = 'msg-edit-btn msg-edit-save';
-  saveBtn.textContent = 'Save';
-  saveBtn.addEventListener('click', async () => {
-    const newText = editInput.value.trim();
-    if (!newText) {
-      editBox.remove();
-      return;
-    }
-    if (newText === currentText) {
-      editBox.remove();
-      return;
-    }
-    const saved = await saveMessageEdit(messageId, newText);
-    if (saved) {
-      editBox.remove();
-    }
-  });
-  
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'msg-edit-btn msg-edit-cancel';
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.addEventListener('click', () => {
-    editBox.remove();
-  });
-  
-  actions.appendChild(saveBtn);
-  actions.appendChild(cancelBtn);
-  editBox.appendChild(editInput);
-  editBox.appendChild(actions);
-  
-  // Enter to save, Escape to cancel
-  editInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      saveBtn.click();
-    } else if (e.key === 'Escape') {
-      cancelBtn.click();
-    }
-  });
-  
-  editInput.focus();
-  editInput.setSelectionRange(editInput.value.length, editInput.value.length);
-  
-  return editBox;
-}
-
-/* -------------------- Reactions -------------------- */
-const REACTION_EMOJIS = ['❤️', '👍', '😂', '😮'];
-
-async function toggleReaction(messageId, emoji) {
-  if (!pairCode) return;
-  const myId = clientId();
-  const reactionPath = `peacepage/reactions/${pairCode}/${messageId}/${emoji}/${myId}`;
-  const reactionRef = ref(db, reactionPath);
-  
-  try {
-    const snap = await get(reactionRef);
-    if (snap.exists()) {
-      // Remove reaction
-      await remove(reactionRef);
-    } else {
-      // Add reaction
-      await set(reactionRef, { t: Date.now() });
-    }
-  } catch(e) {
-    console.error('reaction toggle error', e);
-    showError('Failed to update reaction.');
-  }
-}
-
-function renderReactions(messageId, reactionsData, rowEl, senderIsMe) {
-  const existingReactions = rowEl.querySelector('.msg-reactions-container');
-  if (existingReactions) {
-    existingReactions.remove();
-  }
-  
-  if (!reactionsData || Object.keys(reactionsData).length === 0) {
-    return;
-  }
-  
-  const container = document.createElement('div');
-  container.className = 'msg-reactions-container';
-  
-  const reactionsDiv = document.createElement('div');
-  reactionsDiv.className = 'msg-reactions';
-  
-  // Aggregate reactions
-  const aggregated = {};
-  for (const emoji of REACTION_EMOJIS) {
-    if (reactionsData[emoji]) {
-      const count = Object.keys(reactionsData[emoji]).length;
-      if (count > 0) {
-        aggregated[emoji] = count;
-      }
-    }
-  }
-  
-  // Render reaction buttons
-  for (const emoji of REACTION_EMOJIS) {
-    const count = aggregated[emoji] || 0;
-    if (count === 0 && Object.keys(aggregated).length > 0) continue; // Skip if no reactions and others exist
-    
-    const btn = document.createElement('button');
-    btn.className = 'reaction-btn';
-    if (reactionsData[emoji] && reactionsData[emoji][clientId()]) {
-      btn.classList.add('active');
-    }
-    
-    const emojiSpan = document.createElement('span');
-    emojiSpan.className = 'reaction-emoji';
-    emojiSpan.textContent = emoji;
-    
-    const countSpan = document.createElement('span');
-    countSpan.className = 'reaction-count';
-    countSpan.textContent = count > 0 ? count : '';
-    
-    btn.appendChild(emojiSpan);
-    btn.appendChild(countSpan);
-    
-    btn.addEventListener('click', () => {
-      toggleReaction(messageId, emoji);
-      btn.classList.add('just-added');
-      setTimeout(() => btn.classList.remove('just-added'), 300);
-    });
-    
-    reactionsDiv.appendChild(btn);
-  }
-  
-  // Add reaction picker
-  const picker = document.createElement('div');
-  picker.className = 'reaction-picker';
-  for (const emoji of REACTION_EMOJIS) {
-    const pickerBtn = document.createElement('button');
-    pickerBtn.className = 'reaction-picker-btn';
-    pickerBtn.textContent = emoji;
-    pickerBtn.setAttribute('aria-label', `React with ${emoji}`);
-    pickerBtn.addEventListener('click', () => {
-      toggleReaction(messageId, emoji);
-    });
-    picker.appendChild(pickerBtn);
-  }
-  
-  container.appendChild(reactionsDiv);
-  container.appendChild(picker);
-  
-  const bubble = rowEl.querySelector('.bubble');
-  bubble.appendChild(container);
-}
-
-function attachReactionListener(messageId) {
-  if (!pairCode || reactionListeners.has(messageId)) return;
-  
-  const reactionRef = ref(db, `peacepage/reactions/${pairCode}/${messageId}`);
-  const rowEl = document.getElementById('msg-' + messageId);
-  if (!rowEl) return;
-  
-  const senderIsMe = rowEl.classList.contains('me');
-  
-  const unsubscribe = onValue(reactionRef, (snap) => {
-    const data = snap.val();
-    if (rowEl) {
-      renderReactions(messageId, data, rowEl, senderIsMe);
-    }
-  }, (err) => {
-    console.error('reaction listener error', err);
-  });
-  
-  reactionListeners.set(messageId, unsubscribe);
-}
-
-function detachReactionListener(messageId) {
-  const unsubscribe = reactionListeners.get(messageId);
-  if (unsubscribe) {
-    unsubscribe();
-    reactionListeners.delete(messageId);
-  }
-}
-
 /* -------------------- Message rendering -------------------- */
-function closeAllMenus(){
-  document.querySelectorAll('.msg-options').forEach(m=>{
-    m.classList.remove('show');
-    m.classList.add('hidden');
-    m.style.display = 'none';
-    m.style.left = '';
-    m.style.top = '';
-  });
-  document.querySelectorAll('.msg-row').forEach(r=> r.classList.remove('show-menu'));
-}
-
-function toggleMessageMenu(row, menu) {
-  // close any other open menus first
-  closeAllMenus();
-
-  // prepare menu element
-  // ensure menu is part of DOM and displayed (we use visibility/opacity in CSS)
-  menu.classList.remove('hidden');
-  menu.style.display = 'flex';   // ensure layout so getBoundingClientRect works
-  menu.style.left = '0px';
-  menu.style.top = '0px';
-
-  // compute bubble rect to position menu (fixed position relative to viewport)
-  const bubble = row.querySelector('.bubble');
-  if (!bubble) {
-    // fallback: toggle simple show class if no bubble found
-    menu.classList.add('show');
-    row.classList.add('show-menu');
-    return;
-  }
-  const br = bubble.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const menuRect = menu.getBoundingClientRect();
-  const menuW = Math.max(menuRect.width, 150);
-  const menuH = Math.max(menuRect.height, 120);
-
-  // decide horizontal position
-  let left;
-  if (row.classList.contains('them')) {
-    // try to place left of bubble if possible (for left-aligned messages)
-    left = br.left - menuW - 10;
-    if (left < 8) left = br.right + 10; // else place to right
-  } else {
-    // for my messages place to right
-    left = br.right + 10;
-    if (left + menuW > vw - 8) left = br.left - menuW - 10; // flip left if not enough room
-  }
-
-  // decide vertical position
-  let top = br.top;
-  if (top + menuH > vh - 12) {
-    // move above bubble if it would overflow bottom
-    top = Math.max(8, br.bottom - menuH);
-  }
-  if (top < 8) top = 8;
-
-  // set styles
-  menu.style.position = 'fixed';
-  menu.style.left = Math.round(left) + 'px';
-  menu.style.top = Math.round(top) + 'px';
-  menu.style.right = 'auto';
-  menu.style.bottom = 'auto';
-
-  // show it
-  requestAnimationFrame(() => {
-    menu.classList.add('show');
-    row.classList.add('show-menu');
-  });
-}
-
-document.addEventListener('click', e=>{
-  if (!e.target.closest('.msg-options') && !e.target.closest('.msg-menu-button') && !e.target.closest('.msg-edit-box')) {
-    closeAllMenus();
-  }
-});
 
 function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false){
   const row = document.createElement('div');
   row.className = 'msg-row ' + (senderIsMe ? 'me' : 'them');
   row.id = 'msg-' + id;
-  row.style.position = 'relative';
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble ' + (senderIsMe ? 'me' : 'them');
@@ -557,138 +195,10 @@ function createMessageElement(id, plainText, meta, senderIsMe, isEdited = false)
 
   const metaEl = document.createElement('div');
   metaEl.className = 'meta';
-  let metaText = meta;
-  if (isEdited) {
-    metaText += ' <span class="edited-label">(edited)</span>';
-  }
-  metaEl.innerHTML = metaText;
+  metaEl.innerHTML = meta + (isEdited ? ' <span class="edited-label">(edited)</span>' : '');
   bubble.appendChild(metaEl);
 
-  // menu button + options
-  const menuBtn = document.createElement('button');
-  menuBtn.className = 'msg-menu-button';
-  menuBtn.setAttribute('aria-label', 'Message menu');
-  menuBtn.innerHTML = '&#x25B6;';
-
-  const menu = document.createElement('div');
-  menu.className = 'msg-options hidden';
-
-  const optCopy = document.createElement('button');
-  optCopy.className = 'msg-option';
-  optCopy.textContent = 'Copy';
-  optCopy.addEventListener('click', async (ev)=>{
-    ev.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(plainText || '');
-      optCopy.textContent = 'Copied';
-      setTimeout(()=> optCopy.textContent = 'Copy', 1200);
-    } catch(err){
-      console.warn('copy fail', err);
-      // fallback: select
-      const range = document.createRange();
-      range.selectNodeContents(pre);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-    closeAllMenus();
-  });
-  menu.appendChild(optCopy);
-
-  if (senderIsMe) {
-    const optEdit = document.createElement('button');
-    optEdit.className = 'msg-option';
-    optEdit.textContent = 'Edit';
-    optEdit.addEventListener('click', (ev)=>{
-      ev.stopPropagation();
-      closeAllMenus();
-      const existingEdit = bubble.querySelector('.msg-edit-box');
-      if (existingEdit) {
-        existingEdit.remove();
-        return;
-      }
-      const editBox = createEditBox(id, plainText, bubble);
-      bubble.appendChild(editBox);
-    });
-    menu.appendChild(optEdit);
-    
-    const optDel = document.createElement('button');
-    optDel.className = 'msg-option';
-    optDel.textContent = 'Delete';
-    optDel.style.color = '#ffb4b4';
-    optDel.addEventListener('click', (ev)=>{
-      ev.stopPropagation();
-      closeAllMenus();
-      showDeletePopup(id, menu);
-    });
-    menu.appendChild(optDel);
-  }
-
-  const optReport = document.createElement('button');
-  optReport.className = 'msg-option';
-  optReport.textContent = 'Report';
-  optReport.addEventListener('click', async (ev)=>{
-    ev.stopPropagation();
-    closeAllMenus();
-    try {
-      await push(ref(db, `peacepage/reports/${pairCode || 'ungrouped'}`), {
-        messageId: id,
-        text: plainText || '',
-        sender: senderIsMe ? clientId() : 'them',
-        reporter: clientId(),
-        t: Date.now()
-      });
-      showModal(reportModal);
-    } catch(err){
-      console.error('report error', err);
-      showError('Report failed. Please try again.');
-    }
-  });
-  menu.appendChild(optReport);
-
   row.appendChild(bubble);
-  row.appendChild(menuBtn);
-  row.appendChild(menu);
-
-  // Use click handler with stopPropagation to prevent document click from closing menu
-  menuBtn.setAttribute('tabindex','0'); // accessible
-  menuBtn.addEventListener('click', (ev)=>{
-    ev.stopPropagation();
-    // toggle logic: if menu currently shown -> close; else open
-    if (menu.classList.contains('show')) {
-      closeAllMenus();
-    } else {
-      toggleMessageMenu(row, menu);
-    }
-  });
-
-  // Long press support for mobile
-  let longPressTimer = null;
-  const handleTouchStart = (e) => {
-    longPressTimer = setTimeout(() => {
-      e.preventDefault();
-      toggleMessageMenu(row, menu);
-      row.classList.add('show-menu');
-    }, 500); // 500ms for long press
-  };
-  const handleTouchEnd = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-  };
-  const handleTouchMove = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-  };
-
-  bubble.addEventListener('touchstart', handleTouchStart, { passive: false });
-  bubble.addEventListener('touchend', handleTouchEnd);
-  bubble.addEventListener('touchmove', handleTouchMove);
-  bubble.addEventListener('touchcancel', handleTouchEnd);
-
   return row;
 }
 
@@ -709,10 +219,7 @@ function appendPlainMessageDOM(id, text, timestamp, sender, isEdited = false, is
   
   messagesEl.appendChild(row);
   while (messagesEl.children.length > 1000) {
-    const firstChild = messagesEl.firstChild;
-    const firstId = firstChild.id.replace('msg-', '');
-    detachReactionListener(firstId);
-    messagesEl.removeChild(firstChild);
+    messagesEl.removeChild(messagesEl.firstChild);
   }
   
   // Scroll to bottom smoothly
@@ -721,9 +228,6 @@ function appendPlainMessageDOM(id, text, timestamp, sender, isEdited = false, is
   }, 50);
   
   flash110();
-  
-  // Attach reaction listener
-  attachReactionListener(id);
 }
 
 /* -------------------- Realtime listeners -------------------- */
@@ -764,47 +268,8 @@ function attachListeners(){
     const id = snap.key;
     const el = document.getElementById('msg-' + id);
     if (el) el.remove();
-    detachReactionListener(id);
   }, err => {
     console.error('onChildRemoved error', err);
-  });
-
-  // Listen for message updates (edits) using onChildChanged
-  onChildChanged(nodeRef, async snap => {
-    const id = snap.key;
-    const d = snap.val();
-    if (!d) return;
-    
-    const rowEl = document.getElementById('msg-' + id);
-    if (!rowEl) return; // Message doesn't exist in DOM yet
-    
-    // Decrypt and update the message
-    if (d.c && d.iv) {
-      try {
-        const plain = await decryptWithKey(cryptoKeyCache, d.c, d.iv);
-        const preEl = rowEl.querySelector('.msg-pre');
-        const metaEl = rowEl.querySelector('.meta');
-        
-        if (preEl) {
-          preEl.textContent = plain;
-        }
-        
-        if (metaEl) {
-          const isMine = d.sender === clientId();
-          const timeStr = d.t ? new Date(d.t).toLocaleString() : '';
-          const isEdited = d.edited === true;
-          let metaText = (isMine ? 'You' : 'Them') + ' · ' + timeStr;
-          if (isEdited) {
-            metaText += ' <span class="edited-label">(edited)</span>';
-          }
-          metaEl.innerHTML = metaText;
-        }
-      } catch(e) {
-        console.warn('decrypt failed on update', e);
-      }
-    }
-  }, err => {
-    console.error('onChildChanged error', err);
   });
 
   // Attach typing indicator listener
@@ -816,9 +281,6 @@ function detachListeners(){
   try{
     const nodeRef = ref(db, `peacepage/messages/${pairCode}`);
     off(nodeRef);
-    // Detach all reaction listeners
-    reactionListeners.forEach((unsubscribe) => unsubscribe());
-    reactionListeners.clear();
     // Detach typing listener
     if (partnerTypingUnsub) {
       partnerTypingUnsub();
@@ -874,13 +336,7 @@ async function doClearChat() {
   hideModal(clearChatModal);
   try{
     await remove(ref(db, `peacepage/messages/${pairCode}`));
-    // Clear reactions too
-    try {
-      await remove(ref(db, `peacepage/reactions/${pairCode}`));
-    } catch(e) { /* ignore */ }
     messagesEl.innerHTML = '';
-    reactionListeners.forEach((unsubscribe) => unsubscribe());
-    reactionListeners.clear();
     setStatus('cleared');
   }catch(e){ 
     console.error('clear error', e); 
@@ -898,8 +354,6 @@ function doForgetLocal() {
   localStorage.removeItem(LOCAL_PAIR_KEY);
   pairCode = null;
   messagesEl.innerHTML = '';
-  reactionListeners.forEach((unsubscribe) => unsubscribe());
-  reactionListeners.clear();
   attached = false;
   cryptoKeyCache = null;
   pairSalt = null;
@@ -1000,22 +454,16 @@ textEl.addEventListener('input', () => {
 
 clearBtnTop?.addEventListener('click', clearChat);
 forgetBtn?.addEventListener('click', forgetLocal);
-fullscreenBtn?.addEventListener('click', ()=>{ 
-  const el=document.documentElement; 
-  if (!document.fullscreenElement) el.requestFullscreen?.(); 
-  else document.exitFullscreen?.(); 
-});
 
 // Modal event handlers
 cancelClearBtn.addEventListener('click', () => hideModal(clearChatModal));
 confirmClearBtn.addEventListener('click', doClearChat);
 cancelForgetBtn.addEventListener('click', () => hideModal(forgetModal));
 confirmForgetBtn.addEventListener('click', doForgetLocal);
-closeReportBtn.addEventListener('click', () => hideModal(reportModal));
 closeErrorBtn.addEventListener('click', () => hideModal(errorModal));
 
 // Close modals on overlay click
-[deletePopup, clearChatModal, forgetModal, overwriteModal, reportModal, errorModal, shareModal, encryptionModal].forEach(modal => {
+[clearChatModal, forgetModal, overwriteModal, errorModal, shareModal, encryptionModal].forEach(modal => {
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
       hideModal(modal);
